@@ -35,8 +35,7 @@ curl -Ls raw.githubusercontent.com/mattlianje/testd/master/TestD.scala > TestD.s
 ```
 
 ### Schema Operations
-
-- There are 3 building blocks with `TestD` casting: `castMatchingColumns`, `conformToSchema`, `filterToSchema`
+There are 3 building blocks with **TestD** casting: `castMatchingColumns`, `conformToSchema`, `filterToSchema`
 
 Imagine ...
 - We create a quick and messy DataFrame:
