@@ -11,23 +11,6 @@ A lightweight Scala [quoted-DSL](https://homepages.inf.ed.ac.uk/wadler/papers/qd
 - Work with partial schemas - let Spark do the rest
 - Makes messy data read like a spreadsheet
 
-```scala
-/* Typical messy data - hard to read, inconsistent formatting */
-val messyData = spark.createDataFrame(Seq(
-  (null, "JOHN.DOE", "10,000.50", "20230101", "SALES", "YES"),
-  ("A12345", "Louis XI the Universal Spider", "8,500.00", null, "MARKETING", "1"),
-  ("B78901", "Bob Wilson Jr", "12500", "2023/03", "sales", "NO")
-)).toDF("ID", "name", "SALARY", "START_DT", "Department", "ACTIVE")
-
-/* Pretty TestD data */
-TestD(Seq(
-  ("ID"    , "NAME"                          , "SALARY" , "START_DATE", "DEPARTMENT", "ACTIVE"),
-  ("A12345", "Louis XI the Universal Spider" , 8500.00  , null        , "Marketing" , true    ),
-  ("B78901", "Bob Wilson"                    , 12500.00 , "2023-03-01", "Sales"     , false   ),
-  (null    , "John Doe"                      , 10000.50 , "2023-01-01", "Sales"     , true    )
-))
-```
-
 Want to try? Just load it in your spark-shell:
 ```bash
 curl -Ls raw.githubusercontent.com/mattlianje/testd/master/TestD.scala > TestD.scala && spark-shell -i TestD.scala
@@ -58,7 +41,7 @@ println(data)
 //   ("C303"    , "A long company name", 3      , 799.99 , "HIGH"    , true       )
 // ))
 ```
-4. Use the 3 `TestD` schema operations below.
+4. Use the 3 **TestD** schema operations below.
 
 ### Schema Operations
 There are 3 building blocks with **TestD** casting: `castMatchingColumns`, `conformToSchema`, `filterToSchema`
@@ -160,4 +143,21 @@ TestD(Seq(
   ("Games3"      , "Games"      , 32.97  , false      )
 ))
 */
+```
+
+```scala
+/* Typical messy data - hard to read, inconsistent formatting */
+val messyData = spark.createDataFrame(Seq(
+  (null, "JOHN.DOE", "10,000.50", "20230101", "SALES", "YES"),
+  ("A12345", "Louis XI the Universal Spider", "8,500.00", null, "MARKETING", "1"),
+  ("B78901", "Bob Wilson Jr", "12500", "2023/03", "sales", "NO")
+)).toDF("ID", "name", "SALARY", "START_DT", "Department", "ACTIVE")
+
+/* Pretty TestD data */
+TestD(Seq(
+  ("ID"    , "NAME"                          , "SALARY" , "START_DATE", "DEPARTMENT", "ACTIVE"),
+  ("A12345", "Louis XI the Universal Spider" , 8500.00  , null        , "Marketing" , true    ),
+  ("B78901", "Bob Wilson"                    , 12500.00 , "2023-03-01", "Sales"     , false   ),
+  (null    , "John Doe"                      , 10000.50 , "2023-01-01", "Sales"     , true    )
+))
 ```
