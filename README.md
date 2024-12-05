@@ -33,6 +33,33 @@ Want to try? Just load it in your spark-shell:
 curl -Ls raw.githubusercontent.com/mattlianje/testd/master/TestD.scala > TestD.scala && spark-shell -i TestD.scala
 ```
 
+### Get started
+You just need to know 4 things:
+1. The first row of a **TestD** is for column names
+```scala
+val data = TestD(Seq(
+  ("order_id", "customer", "items", "total", "priority", "delivered"),  // Column names
+  ("A101", "Napac", 5, 299.99, "HIGH", true),                           // Data rows...
+  ("B202", "Air Liquide", 1, 499.50, "LOW", false),
+  ("C303", "A long company name", 3, 799.99, "HIGH", true)
+))
+```
+2. Call `toDf`on a **TestD** to get a Spark DataFrame
+```scala
+val df = data.toDf(spark)
+```
+3. Call `println` on a **TestD** to get a ✨🍰 pretty **TestD**
+```scala
+println(data)                    
+// TestD(Seq(
+//   ("ORDER_ID", "CUSTOMER"           , "ITEMS", "TOTAL", "PRIORITY", "DELIVERED"),
+//   ("A101"    , "Napac"              , 5      , 299.99 , "HIGH"    , true       ),
+//   ("B202"    , "Air Liqide"         , 1      , 499.50 , "LOW"     , false      ),
+//   ("C303"    , "A long company name", 3      , 799.99 , "HIGH"    , true       )
+// ))
+```
+4. Use the 3 `TestD` schema operations below.
+
 ### Schema Operations
 There are 3 building blocks with **TestD** casting: `castMatchingColumns`, `conformToSchema`, `filterToSchema`
 
