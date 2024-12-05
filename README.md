@@ -1,2 +1,2 @@
-# testd (α)
+# testd (pre-α)
 Test data - made simple
