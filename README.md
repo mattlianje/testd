@@ -120,7 +120,7 @@ filteredDf.show()
 ```
 
 
-#### Examples
+### More examples
 - Generate nested data and avoid boilerplate with Scala collections
 ```scala
 val products = for {
