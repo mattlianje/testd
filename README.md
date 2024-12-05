@@ -6,7 +6,7 @@
 **Spark test data - made clean + simple**
 
 A lightweight Scala [quoted-DSL](https://homepages.inf.ed.ac.uk/wadler/papers/qdsl/qdsl.pdf) for Spark test data generation. 🚧 (𝛼): the API is fledgling and may change with feedback.
-### Features
+## Features
 - Data-as-code for DSL for Spark Df's
 - Turns messy data -> ✨🍰 pretty, spreadsheet-like data-as-code
 - Drop **TestD.scala** in any Spark project like a header file
@@ -19,7 +19,7 @@ Want to try? Just load it in your spark-shell:
 curl -Ls raw.githubusercontent.com/mattlianje/testd/master/TestData.scala > TestData.temp.scala && spark-shell -i TestData.temp.scala
 ```
 
-### Get started
+## Get started
 You just need to know 4 things:
 1. The first row of a **TestD** is for column names
 ```scala
@@ -48,7 +48,7 @@ TestD(Seq(
 ```
 4. Use the 3 **TestD** schema operations below.
 
-### Schema Operations
+## Schema Operations
 There are 3 building blocks with **TestD** casting: `castMatchingColumns`, `conformToSchema`, `filterToSchema`
 
 Imagine ...
@@ -120,7 +120,7 @@ filteredDf.show()
 ```
 
 
-### More examples
+## More examples
 - Generate nested data and avoid boilerplate with Scala collections
 ```scala
 val products = for {
