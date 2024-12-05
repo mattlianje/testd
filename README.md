@@ -4,12 +4,11 @@
 A lightweight Scala [quoted-DSL](https://homepages.inf.ed.ac.uk/wadler/papers/qdsl/qdsl.pdf) for Spark test data generation
 
 ### Features
-- Embed readable test data directly in your Scala code
-- Round-trip between DataFrames and clean test fixtures
-- Drop TestD in your Spark app like a header file
-- Takes you from REPL TDD to beautiful unit tests
-- Work on column subsets - let your data models fill in the rest
-- Let Spark handle the heavy lifting of type casting
+- Turn DataFrame test data into readable code
+- Create clean test fixtures for Spark operations
+- Copy and paste into any Spark project
+- Move seamlessly from REPL to unit tests
+- Work with partial schemas - let Spark do the rest
 - Makes messy data read like a spreadsheet
 
 ```scala
