@@ -147,6 +147,7 @@ TestD(Seq(
 */
 ```
 
+- Typical messy data - hard to read, inconsistent formatting:
 ```scala
 /* Typical messy data - hard to read, inconsistent formatting */
 val messyData = spark.createDataFrame(Seq(
@@ -154,8 +155,9 @@ val messyData = spark.createDataFrame(Seq(
   ("A12345", "Louis XI the Universal Spider", "8,500.00", null, "MARKETING", "1"),
   ("B78901", "Bob Wilson Jr", "12500", "2023/03", "sales", "NO")
 )).toDF("ID", "name", "SALARY", "START_DT", "Department", "ACTIVE")
-
-/* Pretty TestD data */
+```
+- ✨🍰 Pretty **TestD** data
+```scala
 TestD(Seq(
   ("ID"    , "NAME"                          , "SALARY" , "START_DATE", "DEPARTMENT", "ACTIVE"),
   ("A12345", "Louis XI the Universal Spider" , 8500.00  , null        , "Marketing" , true    ),
