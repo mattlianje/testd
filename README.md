@@ -3,7 +3,7 @@
 </p>
 
 # testd (𝛼)
-**Spark test data - made simple**
+**Spark test data - made clean + simple**
 
 A lightweight Scala [quoted-DSL](https://homepages.inf.ed.ac.uk/wadler/papers/qdsl/qdsl.pdf) for Spark test data generation
 
