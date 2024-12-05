@@ -1,3 +1,5 @@
 //> using scala "2.13.12"
 //> using lib "org.apache.spark::spark-sql:3.5.3"
 //> using lib "org.scalameta::munit:1.0.3"
+//> using lib "com.holdenkarau:spark-testing-base_2.13:3.5.3_2.0.1"
+//> using jvm "11"
