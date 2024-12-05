@@ -31,7 +31,7 @@ TestD(Seq(
 
 Want to try? Just load it in your spark-shell:
 ```bash
-curl -Ls raw.githubusercontent.com/mattlianje/testd/master/TestD.scala | spark-shell -i -
+curl -Ls raw.githubusercontent.com/mattlianje/testd/master/TestD.scala > TestD.scala && spark-shell -i TestD.scala
 ```
 
 ### Schema Operations
@@ -61,7 +61,7 @@ val schema = StructType(Seq(
 
 #### `castMatchingColumns`
    
-Cast columns if they exist in schema, preserves structure:
+Cast DataFrame columns if they exist in schema, preserves structure:
 ```scala
 val castedDf = TestD.castMatchingColumns(messyDf, schema)
 castedDf.show()
@@ -91,7 +91,7 @@ conformedDf.show()
 
 #### `filterToSchema`
    
-Keeps only schema columns with matching names
+Keeps only DataDrame columns if names exist in schema
 
 ```scala
 val extraDf = messyDf.withColumn("EXTRA", lit("unwanted"))
