@@ -8,7 +8,7 @@
 A lightweight Scala [quoted-DSL](https://homepages.inf.ed.ac.uk/wadler/papers/qdsl/qdsl.pdf) for Spark test data generation.
 
 > [!WARNING]  
-> 🚧(𝛼): the API is fledgling and may change with feedback.
+> (𝛼 status): the API is fledgling and may change with feedback.
 
 ## Features
 - Turns messy data -> ✨🍰 pretty, spreadsheet-like data-as-code
