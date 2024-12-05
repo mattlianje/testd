@@ -5,7 +5,7 @@
 # testd (𝛼)
 **Spark test data - made clean + simple**
 
-A lightweight Scala [quoted-DSL](https://homepages.inf.ed.ac.uk/wadler/papers/qdsl/qdsl.pdf) for Spark test data generation. 🚧 Alpha status: the API is fledgling and may change with feedback.
+A lightweight Scala [quoted-DSL](https://homepages.inf.ed.ac.uk/wadler/papers/qdsl/qdsl.pdf) for Spark test data generation. 🚧 (𝛼): the API is fledgling and may change with feedback.
 ### Features
 - Data-as-code for DSL for Spark Df's
 - Turns messy data -> ✨🍰 pretty, spreadsheet-like data-as-code
