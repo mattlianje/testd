@@ -31,21 +31,24 @@ curl -Ls raw.githubusercontent.com/mattlianje/testd/master/TestD.scala | spark-s
 ```
 
 ## Schema Operations
-- There are 3 building blocks with `TestD` casting.
-		- `castMatchingColumns`
-		- `conformToSchema`
-		- `filterToSchema`
+
+- There are 3 building blocks with `TestD` casting:
+	- `castMatchingColumns`
+	- `conformToSchema`
+	- `filterToSchema`
 
 Imagine ...
+- We create a quick and messy DataFrame:
 ```scala
-/* 1: We create a quick and messy DataFrame */
 val messyDf = spark.createDataFrame(Seq(
   ("1", "2023-01-01", "99.9", "true"),
   ("2", "20230102", "88.8", "1"),
   ("3", "2023/01/03", "77.7", "FALSE")
 )).toDF("ID", "DATE", "AMOUNT", "ACTIVE")
+```
 
-/* 2: We have a target schema with nice types */
+- But, like often, we have a target schema with nice types:
+```scala
 val schema = StructType(Seq(
   StructField("id", IntegerType),
   StructField("date", DateType),
@@ -56,15 +59,10 @@ val schema = StructType(Seq(
 ```
 
 1. `castMatchingColumns`
+   
 Cast columns if they exist in schema, preserves structure:
 ```scala
 val castedDf = TestD.castMatchingColumns(messyDf, schema)
-
-// Result maintains all columns but with proper types:
-// id: Int         (was String)
-// date: Date      (was String)
-// amount: Double  (was String)
-// active: Boolean (was String)
 castedDf.show()
 +---+----------+------+-------+
 | ID|      DATE|AMOUNT|ACTIVE |
@@ -76,36 +74,27 @@ castedDf.show()
 ```
 
 2. `conformToSchema`
+   
 Makes DataFrame match exactly - handles missing/extra columns:
 ```scala
 val conformedDf = TestD.conformToSchema(messyDf, schema)
-
-// Result matches schema exactly:
-// - Casts existing columns
-// - Adds missing columns (category) as null
-// - Maintains schema order
 conformedDf.show()
 +---+----------+------+-------+--------+
-| id|      date|amount|active|category|
+| id|      date|amount|active |category|
 +---+----------+------+-------+--------+
-|  1|2023-01-01|  99.9|  true|    null|
-|  2|2023-01-02|  88.8|  true|    null|
-|  3|2023-01-03|  77.7| false|    null|
+|  1|2023-01-01|  99.9|  true |    null|
+|  2|2023-01-02|  88.8|  true |    null|
+|  3|2023-01-03|  77.7| false |    null|
 +---+----------+------+-------+--------+
 ```
 
 3. `filterToSchema`
+   
 Keeps only schema columns with matching names
+
 ```scala
-// Add extra column to messy data
 val extraDf = messyDf.withColumn("EXTRA", lit("unwanted"))
-
 val filteredDf = TestD.filterToSchema(extraDf, schema)
-
-// Result:
-// - Only keeps columns in schema
-// - Casts to proper types
-// - Removes extra columns
 filteredDf.show()
 +---+----------+------+-------+
 | id|      date|amount|active |
