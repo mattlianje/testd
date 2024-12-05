@@ -5,7 +5,7 @@ A lightweight Scala [quoted-DSL](https://homepages.inf.ed.ac.uk/wadler/papers/qd
 
 ### Features
 - Data-as-code for DSL for Spark Df's
-- Turns messy data -> ✨🍰 pretty spreadsheet-like Df's
+- Turns messy data -> ✨🍰 pretty, spreadsheet-like data-as-code
 - Drop **TestD.scala** in any Spark project like a header file
 - Lets Spark casting do the heavy lifting
 - Move from REPL to unit tests for TDD style ETL
