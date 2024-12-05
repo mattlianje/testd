@@ -3,10 +3,14 @@
 
 A lightweight Scala [quoted-DSL](https://homepages.inf.ed.ac.uk/wadler/papers/qdsl/qdsl.pdf) for Spark test data generation
 
-## Features
+### Features
 - Embed readable test data directly in your Scala code
-- Uses Spark's powerful type-casting under the hood
-- Plugs into your spark-shell for REPL style TDD
+- Round-trip between DataFrames and clean test fixtures
+- Drop TestD in your Spark app like a header file
+- Takes you from REPL TDD to beautiful unit tests
+- Work on column subsets - let your data models fill in the rest
+- Let Spark handle the heavy lifting of type casting
+- Makes messy data read like a spreadsheet
 
 ```scala
 /* Typical messy data - hard to read, inconsistent formatting */
@@ -25,17 +29,14 @@ TestD(Seq(
 ))
 ```
 
-## Load in spark-shell
+Want to try? Just load it in your spark-shell:
 ```bash
 curl -Ls raw.githubusercontent.com/mattlianje/testd/master/TestD.scala | spark-shell -i -
 ```
 
-## Schema Operations
+### Schema Operations
 
-- There are 3 building blocks with `TestD` casting:
-	- `castMatchingColumns`
-	- `conformToSchema`
-	- `filterToSchema`
+- There are 3 building blocks with `TestD` casting: `castMatchingColumns`, `conformToSchema`, `filterToSchema`
 
 Imagine ...
 - We create a quick and messy DataFrame:
@@ -58,7 +59,7 @@ val schema = StructType(Seq(
 ))
 ```
 
-1. `castMatchingColumns`
+#### `castMatchingColumns`
    
 Cast columns if they exist in schema, preserves structure:
 ```scala
@@ -73,7 +74,7 @@ castedDf.show()
 +---+----------+------+-------+
 ```
 
-2. `conformToSchema`
+#### `conformToSchema`
    
 Makes DataFrame match exactly - handles missing/extra columns:
 ```scala
@@ -88,7 +89,7 @@ conformedDf.show()
 +---+----------+------+-------+--------+
 ```
 
-3. `filterToSchema`
+#### `filterToSchema`
    
 Keeps only schema columns with matching names
 
@@ -106,7 +107,7 @@ filteredDf.show()
 ```
 
 
-### Examples
+#### Examples
 - Generate nested data and avoid boilerplate with Scala collections
 ```scala
 val products = for {
