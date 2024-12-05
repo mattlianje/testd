@@ -7,7 +7,6 @@
 
 A lightweight Scala [quoted-DSL](https://homepages.inf.ed.ac.uk/wadler/papers/qdsl/qdsl.pdf) for Spark test data generation. 🚧 (𝛼): the API is fledgling and may change with feedback.
 ## Features
-- Data-as-code for DSL for Spark Df's
 - Turns messy data -> ✨🍰 pretty, spreadsheet-like data-as-code
 - Drop **TestD.scala** in any Spark project like a header file
 - Lets Spark casting do the heavy lifting
