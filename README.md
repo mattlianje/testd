@@ -1,3 +1,6 @@
+> [!WARNING]  
+> the API is fledgling and may change with feedback.
+
 <p align="center">
   <img src="pix/testd.png" width="700">
 </p>
@@ -7,15 +10,11 @@
 
 A lightweight Scala [quoted-DSL](https://homepages.inf.ed.ac.uk/wadler/papers/qdsl/qdsl.pdf) for Spark test data generation.
 
-> [!WARNING]  
-> (𝛼 status): the API is fledgling and may change with feedback.
-
 ## Features
 - Turns messy data -> ✨🍰 pretty, spreadsheet-like data-as-code
 - Drop **TestD.scala** in any Spark project like a header file
 - Lets Spark casting do the heavy lifting
 - Move from REPL to unit tests for TDD style ETL
-
 
 Want to try? Just load it in your spark-shell:
 ```bash
