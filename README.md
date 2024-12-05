@@ -13,7 +13,7 @@ A lightweight Scala [quoted-DSL](https://homepages.inf.ed.ac.uk/wadler/papers/qd
 
 Want to try? Just load it in your spark-shell:
 ```bash
-curl -Ls raw.githubusercontent.com/mattlianje/testd/master/TestD.scala > TestD.scala && spark-shell -i TestD.scala
+curl -Ls raw.githubusercontent.com/mattlianje/testd/master/TestData.scala > TestData.temp.scala && spark-shell -i TestData.temp.scala
 ```
 
 ### Get started
