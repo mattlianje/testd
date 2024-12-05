@@ -1,5 +1,5 @@
 # testd (α)
-**Test data - made simple**
+**Spark test data - made simple**
 
 A lightweight Scala [quoted-DSL](https://homepages.inf.ed.ac.uk/wadler/papers/qdsl/qdsl.pdf) for Spark test data generation
 
