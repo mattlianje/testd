@@ -5,7 +5,11 @@
 # testd (𝛼)
 **Spark test data - made clean + simple**
 
-A lightweight Scala [quoted-DSL](https://homepages.inf.ed.ac.uk/wadler/papers/qdsl/qdsl.pdf) for Spark test data generation. 🚧 (𝛼): the API is fledgling and may change with feedback.
+A lightweight Scala [quoted-DSL](https://homepages.inf.ed.ac.uk/wadler/papers/qdsl/qdsl.pdf) for Spark test data generation.
+
+> [!WARNING]  
+> 🚧(𝛼): the API is fledgling and may change with feedback.
+
 ## Features
 - Turns messy data -> ✨🍰 pretty, spreadsheet-like data-as-code
 - Drop **TestD.scala** in any Spark project like a header file
