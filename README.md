@@ -130,10 +130,9 @@ val products = for {
 } yield (s"$category$id", category, price, inStock)
 
 val productData = TestD(("product", "category", "price", "available") +: products)
-
 println(productData)
 
-/* Pretty prints
+/*
 TestD(Seq(
   ("PRODUCT"     , "CATEGORY"   , "PRICE", "AVAILABLE"),
   ("Electronics1", "Electronics", 10.99  , false      ),
@@ -151,7 +150,6 @@ TestD(Seq(
 
 - Typical messy data - hard to read, inconsistent formatting:
 ```scala
-/* Typical messy data - hard to read, inconsistent formatting */
 val messyData = spark.createDataFrame(Seq(
   (null, "JOHN.DOE", "10,000.50", "20230101", "SALES", "YES"),
   ("A12345", "Louis XI the Universal Spider", "8,500.00", null, "MARKETING", "1"),
