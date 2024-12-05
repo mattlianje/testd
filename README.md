@@ -1,7 +1,7 @@
 # testd (α)
 **Test data - made simple**
 
-A lightweight Scala [quoted-DSL](https://homepages.inf.ed.ac.uk/wadler/papers/qdsl/qdsl.pdf) for Spark test data generation and DataFrame schema manipulation
+A lightweight Scala [quoted-DSL](https://homepages.inf.ed.ac.uk/wadler/papers/qdsl/qdsl.pdf) for Spark test data generation
 
 ## Features
 - Embed readable test data directly in your Scala code
