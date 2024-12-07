@@ -18,7 +18,7 @@ A lightweight Scala [quoted-DSL](https://homepages.inf.ed.ac.uk/wadler/papers/qd
 
 Want to try? Just load it in your spark-shell:
 ```bash
-curl -Ls raw.githubusercontent.com/mattlianje/testd/master/TestData.scala > TestData.temp.scala && spark-shell -i TestData.temp.scala
+curl -Ls raw.githubusercontent.com/mattlianje/testd/master/TestD.scala > .TestD.swp.scala && spark-shell -i .TestD.swp.scala
 ```
 
 ## Get started
@@ -51,7 +51,7 @@ TestD(Seq(
 4. Use the 3 **TestD** schema operations below.
 
 ## Schema Operations
-There are 3 building blocks with **TestD** casting: `castMatchingColumns`, `conformToSchema`, `filterToSchema`
+There are 3 building blocks with **TestD** casting: `castToSchema`, `conformToSchema`, `filterToSchema`
 
 Imagine ...
 - We create a quick and messy DataFrame:
@@ -74,11 +74,11 @@ val schema = StructType(Seq(
 ))
 ```
 
-#### `castMatchingColumns`
+#### `castToSchema`
    
 Cast DataFrame columns if they exist in schema, preserves structure:
 ```scala
-val castedDf = TestD.castMatchingColumns(messyDf, schema)
+val castedDf = TestD.castToSchema(messyDf, schema)
 castedDf.show()
 +---+----------+------+-------+
 | ID|      DATE|AMOUNT|ACTIVE |

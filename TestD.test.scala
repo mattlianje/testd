@@ -156,7 +156,7 @@ class TestDTest extends munit.FunSuite {
       )
     )
 
-    val castedDf = TestD.castMatchingColumns(inputDf, schema)
+    val castedDf = TestD.castToSchema(inputDf, schema)
     assertEquals(castedDf.columns.length, 5)
     assertEquals(
       castedDf.schema.fields.find(_.name == "AGE").get.dataType,

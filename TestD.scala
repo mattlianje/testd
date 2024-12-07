@@ -96,7 +96,7 @@ object TestD {
 
   def apply[T](data: Seq[T]): TestD[T] = new TestD(data)
 
-  def castMatchingColumns(df: DataFrame, schema: StructType): DataFrame = {
+  def castToSchema(df: DataFrame, schema: StructType): DataFrame = {
     val schemaMap = schema.fields.map(f => f.name.toUpperCase -> f).toMap
 
     df.columns.foldLeft(df) { (acc, colName) =>
@@ -111,7 +111,7 @@ object TestD {
   def conformToSchema(df: DataFrame, schema: StructType): DataFrame = {
     val dfColumns = df.columns.map(_.toUpperCase)
 
-    val castedDf = castMatchingColumns(df, schema)
+    val castedDf = castToSchema(df, schema)
 
     schema.fields
       .foldLeft(castedDf) { (acc, field) =>
@@ -132,6 +132,6 @@ object TestD {
       df.columns.filter(col => schemaColumns.contains(col.toUpperCase))
 
     val filteredDf = df.select(columnsToKeep.map(col): _*)
-    castMatchingColumns(filteredDf, schema)
+    castToSchema(filteredDf, schema)
   }
 }
