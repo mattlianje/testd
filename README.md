@@ -5,7 +5,7 @@
   <img src="pix/testd.png" width="700">
 </p>
 
-# testd (𝛼)
+# testd _(𝛼)_
 **Spark test data - made clean + simple**
 
 A lightweight Scala [quoted-DSL](https://homepages.inf.ed.ac.uk/wadler/papers/qdsl/qdsl.pdf) for Spark test data generation.
