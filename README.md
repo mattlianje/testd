@@ -1,6 +1,3 @@
-> [!WARNING]  
-> the API is fledgling and may change with feedback.
-
 <p align="center">
   <img src="pix/testd.png" width="700">
 </p>
@@ -20,6 +17,9 @@ Want to try? **TestD** is on the Maven Central repo [here](https://central.sonat
 ```scala
 "io.github.mattlianje" % "testd_2.13" % "0.1.0"
 ```
+
+> [!WARNING]  
+> Releases sub `1.0.0` are experimental. Breaking API changes might happen
 
 Or load the latest `master` in your spark-shell:
 ```bash
