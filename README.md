@@ -16,7 +16,12 @@ A lightweight Scala [quoted-DSL](https://homepages.inf.ed.ac.uk/wadler/papers/qd
 - Lets Spark casting do the heavy lifting
 - Move from REPL to unit tests for TDD style ETL
 
-Want to try? Just load it in your spark-shell:
+Want to try? **TestD** is on the Maven Central repo [here](https://central.sonatype.com/artifact/io.github.mattlianje/testd_2.13). Add it to your library dependencies:
+```scala
+"io.github.mattlianje" % "testd_2.13" % "0.1.0"
+```
+
+Or load the latest `master` in your spark-shell:
 ```bash
 curl -Ls raw.githubusercontent.com/mattlianje/testd/master/TestD.scala > .TestD.swp.scala && spark-shell -i .TestD.swp.scala
 ```
