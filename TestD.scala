@@ -1,3 +1,5 @@
+package testd
+
 case class TestD[T](data: Seq[T]) {
   import org.apache.spark.sql.{SparkSession, DataFrame, Row}
   import org.apache.spark.sql.types._
@@ -19,24 +21,6 @@ case class TestD[T](data: Seq[T]) {
   }
 
   val rows: Seq[Seq[Any]] = data.tail.map(toSeq)
-
-  private def formatRow(
-      row: Seq[Any],
-      columnWidths: Seq[Int],
-      isHeader: Boolean = false
-  ): String = {
-    row
-      .zip(columnWidths)
-      .map { case (value, width) =>
-        value match {
-          case s: String =>
-            val strValue = if (isHeader) s.toUpperCase else s
-            s""""$strValue"""".padTo(width, ' ')
-          case other => other.toString.padTo(width, ' ')
-        }
-      }
-      .mkString(", ")
-  }
 
   def toDf(spark: SparkSession): DataFrame = {
     val schema = StructType(headers.zip(rows.head).map { case (header, value) =>
@@ -64,22 +48,44 @@ case class TestD[T](data: Seq[T]) {
       allRows
         .map(row =>
           row(i) match {
-            case s: String => s""""$s"""".length
-            case other     => other.toString.length
+            case s: String =>
+              val str = if (row == headers) s.toUpperCase else s
+              if (str.trim.matches("""^\[.*\]$|^\{.*\}$""")) {
+                s"""\"\"\"$str\"\"\"""".length
+              } else {
+                s""""$str"""".length
+              }
+            case other => other.toString.length
           }
         )
         .max
     }
 
-    val headerFormatted = formatRow(headers, columnWidths, true)
-    val formattedRows = rows.map(row => formatRow(row, columnWidths))
+    def formatRow(row: Seq[Any], isHeader: Boolean = false): String = {
+      row
+        .zip(columnWidths)
+        .map { case (value, width) =>
+          value match {
+            case s: String =>
+              val str = if (isHeader) s.toUpperCase else s
+              if (str.trim.matches("""^\[.*\]$|^\{.*\}$""")) {
+                s"""\"\"\"$str\"\"\"""".padTo(width, ' ')
+              } else {
+                s""""$str"""".padTo(width, ' ')
+              }
+            case other => other.toString.padTo(width, ' ')
+          }
+        }
+        .mkString(", ")
+    }
 
+    val headerFormatted = formatRow(headers, true)
+    val formattedRows = rows.map(row => formatRow(row))
     val prefix = data.head match {
       case _: Seq[_]  => "Seq"
       case _: Product => ""
       case _ => throw new IllegalArgumentException("Unsupported header type")
     }
-
     val rowPrefix = if (prefix.isEmpty) "  (" else s"  $prefix("
 
     s"""TestD(Seq(
@@ -90,48 +96,86 @@ case class TestD[T](data: Seq[T]) {
 }
 
 object TestD {
-  import org.apache.spark.sql.{SparkSession, DataFrame, Row}
+  import org.apache.spark.sql.{SparkSession, DataFrame, Row, Column}
   import org.apache.spark.sql.types._
   import org.apache.spark.sql.functions._
 
   def apply[T](data: Seq[T]): TestD[T] = new TestD(data)
 
-  def castToSchema(df: DataFrame, schema: StructType): DataFrame = {
-    val schemaMap = schema.fields.map(f => f.name.toUpperCase -> f).toMap
+  private def normalizeColumnName(
+      name: String,
+      caseSensitive: Boolean
+  ): String =
+    if (caseSensitive) name else name.toUpperCase
 
-    df.columns.foldLeft(df) { (acc, colName) =>
-      schemaMap.get(colName.toUpperCase) match {
-        case Some(field) =>
-          acc.withColumn(colName, col(colName).cast(field.dataType))
-        case None => acc
-      }
+  private def castColumn(colName: String, dataType: DataType): Column =
+    dataType match {
+      case _: ArrayType | _: StructType | _: MapType =>
+        from_json(col(colName), dataType)
+      case _ =>
+        col(colName).cast(dataType)
     }
+
+  def castToSchema(
+      df: DataFrame,
+      schema: StructType,
+      caseSensitive: Boolean = false
+  ): DataFrame = {
+    val schemaMap = schema.fields
+      .map(f => normalizeColumnName(f.name, caseSensitive) -> f.dataType)
+      .toMap
+
+    val castColumns = df.columns.map { colName =>
+      schemaMap
+        .get(normalizeColumnName(colName, caseSensitive))
+        .map(dataType => castColumn(colName, dataType))
+        .getOrElse(col(colName))
+        .as(colName)
+    }
+
+    df.select(castColumns: _*)
   }
 
-  def conformToSchema(df: DataFrame, schema: StructType): DataFrame = {
-    val dfColumns = df.columns.map(_.toUpperCase)
+  def conformToSchema(
+      df: DataFrame,
+      schema: StructType,
+      caseSensitive: Boolean = false
+  ): DataFrame = {
+    val dfColMap = df.columns
+      .map(c => normalizeColumnName(c, caseSensitive) -> c)
+      .toMap
 
-    val castedDf = castToSchema(df, schema)
+    val conformedColumns = schema.fields.map { field =>
+      val normalizedName = normalizeColumnName(field.name, caseSensitive)
+      dfColMap
+        .get(normalizedName)
+        .map(origCol => castColumn(origCol, field.dataType))
+        .getOrElse(lit(null).cast(field.dataType))
+        .as(field.name)
+    }
 
-    schema.fields
-      .foldLeft(castedDf) { (acc, field) =>
-        val upperFieldName = field.name.toUpperCase
-        if (dfColumns.contains(upperFieldName)) {
-          val origColName = df.columns.find(_.toUpperCase == upperFieldName).get
-          acc.withColumn(field.name, col(origColName))
-        } else {
-          acc.withColumn(field.name, lit(null).cast(field.dataType))
-        }
-      }
-      .select(schema.fields.map(_.name).map(col): _*)
+    df.select(conformedColumns: _*)
   }
 
-  def filterToSchema(df: DataFrame, schema: StructType): DataFrame = {
-    val schemaColumns = schema.fields.map(_.name.toUpperCase)
-    val columnsToKeep =
-      df.columns.filter(col => schemaColumns.contains(col.toUpperCase))
+  def filterToSchema(
+      df: DataFrame,
+      schema: StructType,
+      caseSensitive: Boolean = false
+  ): DataFrame = {
+    val schemaColumns = schema.fields
+      .map(f => normalizeColumnName(f.name, caseSensitive))
+      .toSet
 
-    val filteredDf = df.select(columnsToKeep.map(col): _*)
-    castToSchema(filteredDf, schema)
+    val filteredColumns = df.columns
+      .filter(c =>
+        schemaColumns.contains(normalizeColumnName(c, caseSensitive))
+      )
+      .map(col)
+
+    castToSchema(
+      df.select(filteredColumns: _*),
+      schema,
+      caseSensitive
+    )
   }
 }
