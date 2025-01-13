@@ -21,12 +21,12 @@ Want to try? **TestD** is on the Maven Central repo [here](https://central.sonat
 "xyz.matthieucourt" % "testd_2.13" % "0.1.2"
 ```
 
-Or load the latest `master` in your spark-shell:
 Using scala-cli
 ```
 scala-cli repl --dep org.apache.spark::spark-sql:3.5.0 \
                --dep xyz.matthieucourt::testd_2.13:0.1.2
 ```
+Or load the latest `master` in your spark-shell:
 ```bash
 spark-shell -i <(curl -sL https://raw.githubusercontent.com/mattlianje/testd/master/TestD.scala)
 ```
