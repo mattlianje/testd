@@ -500,6 +500,15 @@ class TestDTest extends munit.FunSuite {
       )
     )
 
+    val data2 = TestD(
+      Seq(
+        Map("foo" -> 1),
+        Map("bar" -> 2)
+      )
+    )
+
+    val df2 = data2.toDf(spark).show()
+
     val df = data.toDf(spark)
     assertEquals(df.schema("COL1").dataType, StringType)
     assertEquals(df.schema("COL2").dataType, StringType)

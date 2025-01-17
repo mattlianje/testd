@@ -82,12 +82,15 @@ case class TestD[T](data: Seq[T]) {
   }
 
   def toDf(spark: SparkSession): DataFrame = {
-    val schema = headers.zipWithIndex.map { case (header, i) =>
-      val columnValues = rows.map(_(i))
-      val dataType = if (columnValues.contains(null)) {
+    val schema = headers.map { header =>
+      val values = rows.map { row =>
+        val idx = headers.indexOf(header)
+        if (idx >= 0) row(idx) else null
+      }
+      val dataType = if (values.contains(null)) {
         StringType
       } else {
-        columnValues.head match {
+        values.head match {
           case _: String  => StringType
           case _: Int     => IntegerType
           case _: Long    => LongType
@@ -96,13 +99,24 @@ case class TestD[T](data: Seq[T]) {
           case _          => StringType
         }
       }
-      StructField(header.toString, dataType, nullable = true)
+      (header.toString, StructField(header.toString, dataType, nullable = true))
+    }.toMap
+
+    val convertedRows = rows.map { row =>
+      Row.fromSeq(headers.map { header =>
+        val value = row(headers.indexOf(header))
+        if (schema(header.toString).dataType == StringType) {
+          if (value == null) null
+          else value.toString
+        } else {
+          value
+        }
+      })
     }
 
-    val sparkRows = rows.map(row => Row.fromSeq(row))
     spark.createDataFrame(
-      spark.sparkContext.parallelize(sparkRows),
-      StructType(schema)
+      spark.sparkContext.parallelize(convertedRows),
+      StructType(schema.values.toSeq)
     )
   }
 
