@@ -3,9 +3,10 @@
 </p>
 
 # <img src="pix/testd-logo.png" width="60">   testd _(𝛼)_
-**Test fixtures - reinvented**
+**Pretty, flexible, simple fixtures**
 
-A lightweight Scala [quoted-DSL](https://homepages.inf.ed.ac.uk/wadler/papers/qdsl/qdsl.pdf) for Spark test data generation. Part of [d4s](https://github.com/mattlianje/d4s)
+A lightweight Scala [quoted-DSL](https://homepages.inf.ed.ac.uk/wadler/papers/qdsl/qdsl.pdf) to represent your test fixtures as beautiful,
+easy to edit, executable code. Part of [d4s](https://github.com/mattlianje/d4s)
 
 ## Features
 - Turns messy data -> ✨🍰 pretty, spreadsheet-like data-as-code
