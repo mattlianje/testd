@@ -3,7 +3,7 @@
 </p>
 
 # <img src="pix/testd-logo.png" width="60">   testd _(𝛼)_
-**Spark test data - made clean + simple**
+**Test fixtures - reinvented**
 
 A lightweight Scala [quoted-DSL](https://homepages.inf.ed.ac.uk/wadler/papers/qdsl/qdsl.pdf) for Spark test data generation. Part of [d4s](https://github.com/mattlianje/d4s)
 
@@ -59,6 +59,12 @@ TestD(Seq(
 */
 ```
 4. Use the 3 **TestD** schema operations below.
+
+## Of note ...
+- Ultimately **TestD** is a dead-simple little DSL, but it puts forward a new "code is the data" approach.
+- The spreadsheet format is sometimes derided in CS circles, but has been battle-tested and loved for centuries.
+- The idea is for your fixtures to be "representations" of your data and not materialized instances already bound to a target schema.
+- ^ This is why **TestD** has some built-in niceties for casting, filtering, and conforming the representations of your dataframes.
 
 ## Schema Operations
 There are 3 building blocks with **TestD** casting: `castToSchema`, `conformToSchema`, `filterToSchema`
