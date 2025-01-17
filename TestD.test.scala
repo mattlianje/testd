@@ -490,4 +490,18 @@ class TestDTest extends munit.FunSuite {
     )
     assert(mapData.headers.length > 22)
   }
+
+  test("TestD should handle columns with nulls as StringType") {
+    val data = TestD(
+      Seq(
+        Map("col1" -> "a", "col2" -> 1),
+        Map("col1" -> null, "col2" -> 2),
+        Map("col1" -> "c", "col2" -> null)
+      )
+    )
+
+    val df = data.toDf(spark)
+    assertEquals(df.schema("COL1").dataType, StringType)
+    assertEquals(df.schema("COL2").dataType, StringType)
+  }
 }

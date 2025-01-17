@@ -82,22 +82,27 @@ case class TestD[T](data: Seq[T]) {
   }
 
   def toDf(spark: SparkSession): DataFrame = {
-    val schema = StructType(headers.zip(rows.head).map { case (header, value) =>
-      val dataType = value match {
-        case _: String  => StringType
-        case _: Int     => IntegerType
-        case _: Long    => LongType
-        case _: Double  => DoubleType
-        case _: Boolean => BooleanType
-        case _          => StringType
+    val schema = headers.zipWithIndex.map { case (header, i) =>
+      val columnValues = rows.map(_(i))
+      val dataType = if (columnValues.contains(null)) {
+        StringType
+      } else {
+        columnValues.head match {
+          case _: String  => StringType
+          case _: Int     => IntegerType
+          case _: Long    => LongType
+          case _: Double  => DoubleType
+          case _: Boolean => BooleanType
+          case _          => StringType
+        }
       }
       StructField(header.toString, dataType, nullable = true)
-    })
+    }
 
     val sparkRows = rows.map(row => Row.fromSeq(row))
     spark.createDataFrame(
       spark.sparkContext.parallelize(sparkRows),
-      schema
+      StructType(schema)
     )
   }
 
