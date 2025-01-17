@@ -58,9 +58,9 @@ class TestDTest extends munit.FunSuite {
     assertEquals(
       data.toString,
       """|TestD(Seq(
-         |  Seq("NAME" , "AGE" , "CITY"    ),
-         |  Seq("Alice", 25    , "New York"),
-         |  Seq("Bob"  , 300000, "London"  )
+         |  ("NAME" , "AGE" , "CITY"    ),
+         |  ("Alice", 25    , "New York"),
+         |  ("Bob"  , 300000, "London"  )
          |))""".stripMargin
     )
 
@@ -120,9 +120,9 @@ class TestDTest extends munit.FunSuite {
     assertEquals(
       data.toString,
       """|TestD(Seq(
-         |  Seq("NAME" , "AGE", "CITY"    ),
-         |  Seq("Alice", 25   , "New York"),
-         |  Seq("Bob"  , 30   , "London"  )
+         |  ("NAME" , "AGE", "CITY"    ),
+         |  ("Alice", 25   , "New York"),
+         |  ("Bob"  , 30   , "London"  )
          |))""".stripMargin
     )
 
@@ -472,5 +472,22 @@ class TestDTest extends munit.FunSuite {
        |  Map("name" -> "Bob")
        |))""".stripMargin
     )
+  }
+
+  test("TestD should use Seq format when more than 22 columns") {
+    val manyColumns = Seq.tabulate(23)(i => s"col$i")
+    val data = TestD(
+      Seq(
+        manyColumns,
+        manyColumns.map(_ => "value")
+      )
+    )
+
+    val mapData = TestD(
+      Seq(
+        (1 to 23).map(i => s"col$i").map(col => col -> "value").toMap
+      )
+    )
+    assert(mapData.headers.length > 22)
   }
 }

@@ -147,12 +147,15 @@ case class TestD[T](data: Seq[T]) {
     val headerFormatted = formatRow(headers, true)
     val formattedRows = rows.map(row => formatRow(row))
     val prefix = data.head match {
-      case _: Map[_, _] => ""
-      case _: Seq[_]    => "Seq"
-      case _: Product   => ""
+      case _: Map[_, _]                      => ""
+      case _: Seq[_]                         => "Seq"
+      case _: Product if headers.length > 22 => "Seq"
+      case _: Product                        => ""
       case _ => throw new IllegalArgumentException("Unsupported header type")
     }
-    val rowPrefix = if (prefix.isEmpty) "  (" else s"  $prefix("
+
+    val useSeqPrefix = headers.length > 22
+    val rowPrefix = if (useSeqPrefix) "  Seq(" else "  ("
 
     s"""TestD(Seq(
      |$rowPrefix$headerFormatted),
