@@ -389,4 +389,88 @@ class TestDTest extends munit.FunSuite {
     val metadata = record.getStruct(3)
     assertEquals(metadata.getSeq[String](1), Seq("honors", "stem"))
   }
+
+  test("TestD should handle Maps with different keys") {
+    val data = TestD(
+      Seq(
+        Map("name" -> "Alice", "age" -> 25),
+        Map("name" -> "Bob", "city" -> "NY"),
+        Map("age" -> 30, "active" -> true)
+      )
+    )
+
+    assertEquals(data.headers, Seq("ACTIVE", "AGE", "CITY", "NAME"))
+
+    assertEquals(
+      data.rows,
+      Seq(
+        Seq(null, 25, null, "Alice"),
+        Seq(null, null, "NY", "Bob"),
+        Seq(true, 30, null, null)
+      )
+    )
+
+    assertEquals(
+      data.toString,
+      """|TestD(Seq(
+       |  ("ACTIVE", "AGE", "CITY", "NAME" ),
+       |  (null    , 25   , null  , "Alice"),
+       |  (null    , null , "NY"  , "Bob"  ),
+       |  (true    , 30   , null  , null   )
+       |))""".stripMargin
+    )
+
+    assertEquals(
+      data.toMap,
+      """|TestD(Seq(
+       |  Map("age" -> 25, "name" -> "Alice"),
+       |  Map("city" -> "NY", "name" -> "Bob"),
+       |  Map("active" -> true, "age" -> 30)
+       |))""".stripMargin
+    )
+  }
+  test("TestD should support adding and dropping columns") {
+    val data = TestD(
+      Seq(
+        Map("name" -> "Alice", "age" -> 25),
+        Map("name" -> "Bob", "age" -> 30)
+      )
+    )
+
+    val withCity = data.withColumn("city")
+    assertEquals(
+      withCity.toMap,
+      """|TestD(Seq(
+       |  Map("age" -> 25, "city" -> null, "name" -> "Alice"),
+       |  Map("age" -> 30, "city" -> null, "name" -> "Bob")
+       |))""".stripMargin
+    )
+
+    val withCountry = data.withColumn("country", "USA")
+    assertEquals(
+      withCountry.toMap,
+      """|TestD(Seq(
+       |  Map("age" -> 25, "country" -> "USA", "name" -> "Alice"),
+       |  Map("age" -> 30, "country" -> "USA", "name" -> "Bob")
+       |))""".stripMargin
+    )
+
+    val droppedAge = withCountry.drop("age")
+    assertEquals(
+      droppedAge.toMap,
+      """|TestD(Seq(
+       |  Map("country" -> "USA", "name" -> "Alice"),
+       |  Map("country" -> "USA", "name" -> "Bob")
+       |))""".stripMargin
+    )
+
+    val droppedMultiple = withCountry.drop("age", "country")
+    assertEquals(
+      droppedMultiple.toMap,
+      """|TestD(Seq(
+       |  Map("name" -> "Alice"),
+       |  Map("name" -> "Bob")
+       |))""".stripMargin
+    )
+  }
 }

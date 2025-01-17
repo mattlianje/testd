@@ -5,22 +5,81 @@ case class TestD[T](data: Seq[T]) {
   import org.apache.spark.sql.types._
 
   require(data.nonEmpty, "TestD must contain at least one row (headers)")
+  require(
+    data.forall(_.isInstanceOf[Map[_, _]]) || data.forall(
+      !_.isInstanceOf[Map[_, _]]
+    ),
+    "TestD must contain either all maps or no maps"
+  )
+
+  private def getAllHeaders: Seq[String] = {
+    data
+      .flatMap {
+        case map: Map[_, _] => map.keys
+        case _              => Seq.empty
+      }
+      .distinct
+      .map(_.toString.toUpperCase)
+      .sorted
+  }
 
   private def toSeq(row: Any): Seq[Any] = row match {
     case seq: Seq[_]    => seq
     case tuple: Product => tuple.productIterator.toSeq
+    case map: Map[_, _] =>
+      getAllHeaders.map(header =>
+        map
+          .asInstanceOf[Map[String, Any]]
+          .find { case (k, _) => k.toUpperCase == header }
+          .map(_._2)
+          .getOrElse(null)
+      )
     case other =>
       throw new IllegalArgumentException(
         s"Unsupported row type: ${other.getClass}"
       )
   }
 
-  val headers: Seq[Any] = toSeq(data.head).map {
-    case s: String => s.toUpperCase
-    case other     => other
+  val headers: Seq[Any] = if (data.head.isInstanceOf[Map[_, _]]) {
+    getAllHeaders
+  } else {
+    toSeq(data.head).map {
+      case s: String => s.toUpperCase
+      case other     => other
+    }
   }
 
-  val rows: Seq[Seq[Any]] = data.tail.map(toSeq)
+  val rows: Seq[Seq[Any]] = if (data.head.isInstanceOf[Map[_, _]]) {
+    data.map(toSeq)
+  } else {
+    data.tail.map(toSeq)
+  }
+
+  def toMap: String = {
+    val rowsAsMap = if (data.head.isInstanceOf[Map[_, _]]) {
+      data.map(_.asInstanceOf[Map[String, Any]])
+    } else {
+      val columnNames = headers.map(_.toString)
+      rows.map(row => columnNames.zip(row).toMap)
+    }
+
+    s"""TestD(Seq(
+     |${rowsAsMap
+        .map(m =>
+          s"""  Map(${m.toSeq
+              .sortBy(_._1)
+              .map { case (k, v) =>
+                v match {
+                  case s: String => s""""$k" -> "$s""""
+                  case null      => s""""$k" -> null"""
+                  case other     => s""""$k" -> $other"""
+                }
+              }
+              .mkString(", ")})"""
+        )
+        .mkString(",\n")}
+     |))""".stripMargin
+  }
 
   def toDf(spark: SparkSession): DataFrame = {
     val schema = StructType(headers.zip(rows.head).map { case (header, value) =>
@@ -43,7 +102,11 @@ case class TestD[T](data: Seq[T]) {
   }
 
   override def toString: String = {
-    val allRows = data.map(toSeq)
+    val allRows = data.head match {
+      case _: Map[_, _] => Seq(headers) ++ rows
+      case _            => data.map(toSeq)
+    }
+
     val columnWidths = headers.indices.map { i =>
       allRows
         .map(row =>
@@ -55,6 +118,7 @@ case class TestD[T](data: Seq[T]) {
               } else {
                 s""""$str"""".length
               }
+            case null  => "null".length
             case other => other.toString.length
           }
         )
@@ -73,6 +137,7 @@ case class TestD[T](data: Seq[T]) {
               } else {
                 s""""$str"""".padTo(width, ' ')
               }
+            case null  => "null".padTo(width, ' ')
             case other => other.toString.padTo(width, ' ')
           }
         }
@@ -82,16 +147,59 @@ case class TestD[T](data: Seq[T]) {
     val headerFormatted = formatRow(headers, true)
     val formattedRows = rows.map(row => formatRow(row))
     val prefix = data.head match {
-      case _: Seq[_]  => "Seq"
-      case _: Product => ""
+      case _: Map[_, _] => ""
+      case _: Seq[_]    => "Seq"
+      case _: Product   => ""
       case _ => throw new IllegalArgumentException("Unsupported header type")
     }
     val rowPrefix = if (prefix.isEmpty) "  (" else s"  $prefix("
 
     s"""TestD(Seq(
-       |$rowPrefix$headerFormatted),
-       |${formattedRows.map(row => s"$rowPrefix$row)").mkString(",\n")}
-       |))""".stripMargin
+     |$rowPrefix$headerFormatted),
+     |${formattedRows.map(row => s"$rowPrefix$row)").mkString(",\n")}
+     |))""".stripMargin
+  }
+
+  def withColumn(name: String): TestD[Map[String, Any]] =
+    withColumn(name, null.asInstanceOf[String])
+
+  def withColumn(name: String, value: Any): TestD[Map[String, Any]] = {
+    val newHeaders = headers :+ name.toUpperCase
+    val newRows = rows.map(_ :+ value)
+
+    new TestD[Map[String, Any]](
+      if (data.head.isInstanceOf[Map[_, _]]) {
+        data.map { row =>
+          row.asInstanceOf[Map[String, Any]] + (name -> value)
+        }
+      } else {
+        rows.map(row =>
+          headers.map(_.toString).zip(row).toMap + (name -> value)
+        )
+      }
+    )
+  }
+
+  def drop(colNames: String*): TestD[Map[String, Any]] = {
+    val upperColNames = colNames.map(_.toUpperCase)
+
+    new TestD[Map[String, Any]](
+      if (data.head.isInstanceOf[Map[_, _]]) {
+        data.map { row =>
+          row.asInstanceOf[Map[String, Any]].filterNot { case (k, _) =>
+            upperColNames.contains(k.toUpperCase)
+          }
+        }
+      } else {
+        rows.map(row =>
+          headers
+            .map(_.toString)
+            .zip(row)
+            .filterNot { case (k, _) => upperColNames.contains(k.toUpperCase) }
+            .toMap
+        )
+      }
+    )
   }
 }
 

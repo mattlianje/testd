@@ -1,13 +1,13 @@
-//> using scala "2.13.12"
-//> using dep "org.apache.spark::spark-sql:3.5.4"
+//> using scala "2.12"
+//> using dep "org.apache.spark::spark-sql:3.5.0"
 //> using dep "org.scalameta::munit:1.0.3"
-//> using dep "com.holdenkarau:spark-testing-base_2.13:3.5.3_2.0.1"
+//> using dep "com.holdenkarau:spark-testing-base_2.12:3.5.0_2.0.1"
 //> using jvm "11"
 
 // Publishing metadata
 //> using publish.name "testd"
-//> using publish.organization "io.github.mattlianje"
-//> using publish.version "0.1.1"
+//> using publish.organization "xyz.matthieucourt"
+//> using publish.version "0.1.3"
 //> using publish.url "https://github.com/mattlianje/testd"
 //> using publish.vcs "github:mattlianje/testd"
 //> using publish.license "GPL-3.0"
