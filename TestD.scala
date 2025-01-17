@@ -82,41 +82,33 @@ case class TestD[T](data: Seq[T]) {
   }
 
   def toDf(spark: SparkSession): DataFrame = {
-    val schema = headers.map { header =>
-      val values = rows.map { row =>
-        val idx = headers.indexOf(header)
-        if (idx >= 0) row(idx) else null
+    val schema = headers.zipWithIndex.map { case (header, idx) =>
+      val columnValues = rows.map(_(idx))
+      val dataType = columnValues.headOption match {
+        case Some(value) if !columnValues.contains(null) =>
+          value match {
+            case _: String  => StringType
+            case _: Int     => StringType 
+            case _: Long    => StringType 
+            case _: Double  => StringType 
+            case _: Boolean => StringType 
+            case _          => StringType
+          }
+        case _ => StringType
       }
-      val dataType = if (values.contains(null)) {
-        StringType
-      } else {
-        values.head match {
-          case _: String  => StringType
-          case _: Int     => IntegerType
-          case _: Long    => LongType
-          case _: Double  => DoubleType
-          case _: Boolean => BooleanType
-          case _          => StringType
-        }
-      }
-      (header.toString, StructField(header.toString, dataType, nullable = true))
-    }.toMap
+      StructField(header.toString, dataType, nullable = true)
+    }
 
     val convertedRows = rows.map { row =>
-      Row.fromSeq(headers.map { header =>
-        val value = row(headers.indexOf(header))
-        if (schema(header.toString).dataType == StringType) {
-          if (value == null) null
-          else value.toString
-        } else {
-          value
-        }
+      Row.fromSeq(row.map {
+        case null => null
+        case v    => v.toString
       })
     }
 
     spark.createDataFrame(
       spark.sparkContext.parallelize(convertedRows),
-      StructType(schema.values.toSeq)
+      StructType(schema)
     )
   }
 

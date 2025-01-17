@@ -513,4 +513,66 @@ class TestDTest extends munit.FunSuite {
     assertEquals(df.schema("COL1").dataType, StringType)
     assertEquals(df.schema("COL2").dataType, StringType)
   }
+
+  test("TestD should support applying various target schemas") {
+    val testData = TestD(
+      Seq(
+        ("name", "age", "score"),
+        ("Alice", 25, 95.5),
+        ("Bob", 30, 88.3)
+      )
+    )
+
+    val df = testData.toDf(spark)
+
+    val stringSchema = StructType(
+      Array(
+        StructField("NAME", StringType, true),
+        StructField("AGE", StringType, true),
+        StructField("SCORE", StringType, true)
+      )
+    )
+    val asStrings = TestD.castToSchema(df, stringSchema)
+    assertEquals(asStrings.schema("AGE").dataType, StringType)
+    assertEquals(asStrings.collect()(0).getString(1), "25")
+
+    val numericSchema = StructType(
+      Array(
+        StructField("NAME", StringType, true),
+        StructField("AGE", IntegerType, true),
+        StructField("SCORE", DoubleType, true)
+      )
+    )
+    val asNums = TestD.castToSchema(df, numericSchema)
+    assertEquals(asNums.schema("AGE").dataType, IntegerType)
+    assertEquals(asNums.collect()(0).getInt(1), 25)
+    assertEquals(asNums.collect()(0).getDouble(2), 95.5)
+
+    val partialSchema = StructType(
+      Array(
+        StructField("NAME", StringType, true),
+        StructField("AGE", IntegerType, true)
+      )
+    )
+    val partial = TestD.filterToSchema(df, partialSchema)
+    assertEquals(partial.columns.length, 2)
+    assertEquals(partial.schema("AGE").dataType, IntegerType)
+
+    val reorderedSchema = StructType(
+      Array(
+        StructField("SCORE", DoubleType, true),
+        StructField("NAME", StringType, true),
+        StructField("AGE", IntegerType, true)
+      )
+    )
+    val reordered = TestD.conformToSchema(df, reorderedSchema)
+    assertEquals(
+      reordered.schema.fields.map(_.name).toSeq,
+      Seq("SCORE", "NAME", "AGE")
+    )
+    val row = reordered.collect()(0)
+    assertEquals(row.getDouble(0), 95.5)
+    assertEquals(row.getString(1), "Alice")
+    assertEquals(row.getInt(2), 25)
+  }
 }
