@@ -1,4 +1,4 @@
-//> using scala "2.12"
+//> using scala "2.13"
 //> using dep "org.apache.spark::spark-sql:3.5.0"
 //> using dep "org.scalameta::munit:1.0.3"
 //> using dep "com.holdenkarau:spark-testing-base_2.12:3.5.0_2.0.1"

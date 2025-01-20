@@ -88,10 +88,10 @@ case class TestD[T](data: Seq[T]) {
         case Some(value) if !columnValues.contains(null) =>
           value match {
             case _: String  => StringType
-            case _: Int     => StringType 
-            case _: Long    => StringType 
-            case _: Double  => StringType 
-            case _: Boolean => StringType 
+            case _: Int     => StringType
+            case _: Long    => StringType
+            case _: Double  => StringType
+            case _: Boolean => StringType
             case _          => StringType
           }
         case _ => StringType
@@ -194,25 +194,45 @@ case class TestD[T](data: Seq[T]) {
     )
   }
 
-  def drop(colNames: String*): TestD[Map[String, Any]] = {
+  def select(colNames: String*): TestD[Map[String, Any]] = {
     val upperColNames = colNames.map(_.toUpperCase)
+    val nonExistentColumns = upperColNames.filterNot(col =>
+      headers.map(_.toString.toUpperCase).contains(col)
+    )
+    require(
+      nonExistentColumns.isEmpty,
+      s"Columns not found: ${nonExistentColumns.mkString(", ")}"
+    )
 
     new TestD[Map[String, Any]](
       if (data.head.isInstanceOf[Map[_, _]]) {
         data.map { row =>
-          row.asInstanceOf[Map[String, Any]].filterNot { case (k, _) =>
+          row.asInstanceOf[Map[String, Any]].filter { case (k, _) =>
             upperColNames.contains(k.toUpperCase)
           }
         }
       } else {
+        val selectedIndices = upperColNames.map(col =>
+          headers.map(_.toString.toUpperCase).indexOf(col)
+        )
         rows.map(row =>
-          headers
-            .map(_.toString)
-            .zip(row)
-            .filterNot { case (k, _) => upperColNames.contains(k.toUpperCase) }
+          selectedIndices
+            .zip(upperColNames)
+            .map { case (idx, colName) =>
+              colName -> row(idx)
+            }
             .toMap
         )
       }
+    )
+  }
+
+  def drop(colNames: String*): TestD[Map[String, Any]] = {
+    val upperColNames = colNames.map(_.toUpperCase)
+    select(
+      headers
+        .map(_.toString)
+        .filterNot(col => upperColNames.contains(col.toUpperCase)): _*
     )
   }
 }
