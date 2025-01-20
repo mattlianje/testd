@@ -97,6 +97,8 @@ Cast DataFrame columns if they exist in schema, preserves structure:
 ```scala
 val castedDf = TestD.castToSchema(messyDf, schema)
 castedDf.show()
+```
+```
 +---+----------+------+-------+
 | ID|      DATE|AMOUNT|ACTIVE |
 +---+----------+------+-------+
@@ -112,6 +114,8 @@ Makes DataFrame match exactly - handles missing/extra columns:
 ```scala
 val conformedDf = TestD.conformToSchema(messyDf, schema)
 conformedDf.show()
+```
+```
 +---+----------+------+-------+--------+
 | id|      date|amount|active |category|
 +---+----------+------+-------+--------+
@@ -129,6 +133,8 @@ Keeps only DataDrame columns if names exist in schema
 val extraDf = messyDf.withColumn("EXTRA", lit("unwanted"))
 val filteredDf = TestD.filterToSchema(extraDf, schema)
 filteredDf.show()
+```
+```
 +---+----------+------+-------+
 | id|      date|amount|active |
 +---+----------+------+-------+
@@ -136,6 +142,88 @@ filteredDf.show()
 |  2|2023-01-02|  88.8|  true |
 |  3|2023-01-03|  77.7| false |
 +---+----------+------+-------+
+```
+
+## Column Operations
+**TestD** makes it dead simple to manipulate your test data, just like you would with a Spark DataFrame
+
+Start with some sample data:
+```scala
+val orders = TestD(Seq(
+  ("order_id", "customer", "items", "total", "priority"),
+  ("A101", "Acme Corp", 5, 299.99, "HIGH"),
+  ("B202", "Globex", 1, 499.50, "LOW"),
+  ("C303", "Initech", 3, 799.99, "HIGH")
+))
+```
+
+Add a new column with a default value:
+```scala
+val withStatus = orders.withColumn("status", "pending")
+println(withStatus)
+/*
+TestD(Seq(
+  ("ORDER_ID", "CUSTOMER", "ITEMS", "TOTAL" , "PRIORITY", "STATUS" ),
+  ("A101"    , "Acme Corp", 5     , 299.99  , "HIGH"    , "pending"),
+  ("B202"    , "Globex"   , 1     , 499.50  , "LOW"     , "pending"),
+  ("C303"    , "Initech"  , 3     , 799.99  , "HIGH"    , "pending")
+))
+*/
+```
+
+Or add a column with null values for later population
+```scala
+val withNotes = orders.withColumn("notes")
+println(withNotes)
+/*
+TestD(Seq(
+  ("ORDER_ID", "CUSTOMER", "ITEMS", "TOTAL" , "PRIORITY", "NOTES"),
+  ("A101"    , "Acme Corp", 5     , 299.99  , "HIGH"    , null  ),
+  ("B202"    , "Globex"   , 1     , 499.50  , "LOW"     , null  ),
+  ("C303"    , "Initech"  , 3     , 799.99  , "HIGH"    , null  )
+))
+*/
+```
+
+Select only the columns you need
+```scala
+val essential = orders.select("order_id", "customer", "total")
+println(essential)
+/*
+TestD(Seq(
+  ("ORDER_ID", "CUSTOMER", "TOTAL" ),
+  ("A101"    , "Acme Corp", 299.99 ),
+  ("B202"    , "Globex"   , 499.50 ),
+  ("C303"    , "Initech"  , 799.99 )
+))
+*/
+```
+
+Drop columns you don't want
+```scala
+val simplified = orders.drop("priority")
+println(simplified)
+/*
+TestD(Seq(
+  ("ORDER_ID", "CUSTOMER", "ITEMS", "TOTAL" ),
+  ("A101"    , "Acme Corp", 5     , 299.99  ),
+  ("B202"    , "Globex"   , 1     , 499.50  ),
+  ("C303"    , "Initech"  , 3     , 799.99  )
+))
+*/
+```
+
+Convert to a Map representation for comparison or serialization
+```scala
+val mapRepresentation = orders.toMap
+println(mapRepresentation)
+/*
+TestD(Seq(
+  Map("order_id" -> "A101", "customer" -> "Acme Corp", "items" -> 5, "total" -> 299.99, "priority" -> "HIGH"),
+  Map("order_id" -> "B202", "customer" -> "Globex", "items" -> 1, "total" -> 499.50, "priority" -> "LOW"),
+  Map("order_id" -> "C303", "customer" -> "Initech", "items" -> 3, "total" -> 799.99, "priority" -> "HIGH")
+))
+*/
 ```
 
 
