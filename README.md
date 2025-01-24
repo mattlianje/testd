@@ -36,6 +36,8 @@ spark-shell -i <(curl -sL https://raw.githubusercontent.com/mattlianje/testd/mas
 You just need to know 4 things:
 1. The first row of a **TestD** is for column names
 ```scala
+import testd._
+
 val data = TestD(Seq(
   ("order_id", "customer", "items", "total", "priority", "delivered"),  /* Column names */
   ("A101", "Napac", 5, 299.99, "HIGH", true),                           /* Data rows... */
@@ -82,6 +84,8 @@ val messyDf = spark.createDataFrame(Seq(
 
 - But, like often, we have a target schema with nice types:
 ```scala
+import org.apache.spark.sql.types._
+
 val schema = StructType(Seq(
   StructField("id", IntegerType),
   StructField("date", DateType),
@@ -149,6 +153,8 @@ filteredDf.show()
 
 Start with some sample data:
 ```scala
+import testd._
+
 val orders = TestD(Seq(
   ("order_id", "customer", "items", "total", "priority"),
   ("A101", "Acme Corp", 5, 299.99, "HIGH"),
@@ -224,6 +230,37 @@ TestD(Seq(
   Map("order_id" -> "C303", "customer" -> "Initech", "items" -> 3, "total" -> 799.99, "priority" -> "HIGH")
 ))
 */
+```
+
+## Creating nested data
+```scala
+import testd._
+import org.apache.spark.sql.types._
+
+val studentSchema = StructType(Seq(
+ StructField("id", IntegerType),
+ StructField("student", StructType(Seq(
+   StructField("name", StringType),
+   StructField("grades", ArrayType(IntegerType)),
+   StructField("subjects", ArrayType(StringType))
+ )))
+))
+
+val data = TestD(Seq(
+ ("id", "student"),
+ (1, """{
+   "name": "Alice", 
+   "grades": [95, 87, 92],
+   "subjects": ["math", "english"]
+ }"""),
+ (2, """{
+   "name": "Bob",
+   "grades": [82, 85, 88], 
+   "subjects": ["math", "history"]  
+ }""")
+))
+
+val df = TestD.conformToSchema(data.toDf(spark), studentSchema)
 ```
 
 
