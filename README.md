@@ -8,6 +8,12 @@
 A lightweight Scala [quoted-DSL](https://homepages.inf.ed.ac.uk/wadler/papers/qdsl/qdsl.pdf) to represent your test fixtures as beautiful,
 easy to edit, executable code. Part of [d4s](https://github.com/mattlianje/d4s)
 
+## Features
+- Turns messy data -> ✨🍰 pretty, spreadsheet-like data-as-code
+- Drop **TestD.scala** in any Spark project like a header file
+- Lets Spark casting do the heavy lifting
+- Move from REPL to unit tests for TDD style ETL
+
 ## Table of Contents
 - [Features](#features)
 - [Get Started](#get-started)
@@ -20,12 +26,8 @@ easy to edit, executable code. Part of [d4s](https://github.com/mattlianje/d4s)
 - [Creating nested data](#creating-nested-data)
 - [More examples](#more-examples)
 
-## Features
-- Turns messy data -> ✨🍰 pretty, spreadsheet-like data-as-code
-- Drop **TestD.scala** in any Spark project like a header file
-- Lets Spark casting do the heavy lifting
-- Move from REPL to unit tests for TDD style ETL
 
+## Get started
 > [!WARNING]  
 > Releases sub `1.0.0` are experimental. Breaking API changes might happen
 
@@ -44,7 +46,6 @@ Or load the latest `master` in your spark-shell:
 spark-shell -i <(curl -sL https://raw.githubusercontent.com/mattlianje/testd/master/TestD.scala)
 ```
 
-## Get started
 You just need to know 4 things:
 1. The first row of a **TestD** is for column names
 ```scala
