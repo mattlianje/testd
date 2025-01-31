@@ -575,4 +575,40 @@ class TestDTest extends munit.FunSuite {
     assertEquals(row.getString(1), "Alice")
     assertEquals(row.getInt(2), 25)
   }
+
+  test("toString should handle nested JSON with triple quotes") {
+    val data = TestD(
+      Seq(
+        ("id", "data"),
+        (1, """{"x": 1}""")
+      )
+    )
+
+    val result = data.toString
+    println(data.toMap)
+    println(data.toString)
+    assert(result.contains("\"\"\""))
+  }
+
+  test("fromDf should convert DataFrame to TestD") {
+    val df = spark
+      .createDataFrame(
+        Seq(
+          (1, """{"name": "Alice", "grades": [95,87]}"""),
+          (2, """{"name": "Bob", "grades": [82,85]}""")
+        )
+      )
+      .toDF("id", "student")
+
+    val testd = TestD.fromDf(df)
+    println(testd)
+
+    assert(testd.headers.toSet == Set("ID", "STUDENT"))
+    assert(testd.rows.length == 2)
+
+    val firstRow = testd.rows.head.asInstanceOf[Seq[Any]]
+    assert(firstRow(0) == "1")
+    assert(firstRow(1).toString.contains("Alice"))
+  }
+
 }

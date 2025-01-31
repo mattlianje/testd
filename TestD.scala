@@ -70,6 +70,10 @@ case class TestD[T](data: Seq[T]) {
               .sortBy(_._1)
               .map { case (k, v) =>
                 v match {
+                  case s: String
+                      if s.trim.matches("""^\s*\{[\s\S]*\}\s*$""") || s.trim
+                        .matches("""^\s*\[[\s\S]*\]\s*$""") =>
+                    s""""$k" -> \"\"\"$s\"\"\""""
                   case s: String => s""""$k" -> "$s""""
                   case null      => s""""$k" -> null"""
                   case other     => s""""$k" -> $other"""
@@ -124,7 +128,10 @@ case class TestD[T](data: Seq[T]) {
           row(i) match {
             case s: String =>
               val str = if (row == headers) s.toUpperCase else s
-              if (str.trim.matches("""^\[.*\]$|^\{.*\}$""")) {
+              if (
+                str.trim.matches("""^\s*\{[\s\S]*\}\s*$""") || str.trim
+                  .matches("""^\s*\[[\s\S]*\]\s*$""")
+              ) {
                 s"""\"\"\"$str\"\"\"""".length
               } else {
                 s""""$str"""".length
@@ -143,7 +150,11 @@ case class TestD[T](data: Seq[T]) {
           value match {
             case s: String =>
               val str = if (isHeader) s.toUpperCase else s
-              if (str.trim.matches("""^\[.*\]$|^\{.*\}$""")) {
+              if (
+                str.trim.matches("""^\s*\{[\s\S]*\}\s*$""") || str.trim.matches(
+                  """^\s*\[[\s\S]*\]\s*$"""
+                )
+              ) {
                 s"""\"\"\"$str\"\"\"""".padTo(width, ' ')
               } else {
                 s""""$str"""".padTo(width, ' ')
@@ -319,5 +330,21 @@ object TestD {
       schema,
       caseSensitive
     )
+  }
+
+  def fromDf(df: DataFrame): TestD[Map[String, Any]] = {
+    val rows = df
+      .collect()
+      .map(row =>
+        df.columns
+          .zip(row.toSeq.map {
+            case null => null
+            case v    => v.toString
+          })
+          .toMap
+      )
+      .toSeq
+
+    new TestD(rows)
   }
 }
