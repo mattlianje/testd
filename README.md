@@ -8,6 +8,18 @@
 A lightweight Scala [quoted-DSL](https://homepages.inf.ed.ac.uk/wadler/papers/qdsl/qdsl.pdf) to represent your test fixtures as beautiful,
 easy to edit, executable code. Part of [d4s](https://github.com/mattlianje/d4s)
 
+## Table of Contents
+- [Features](#features)
+- [Get Started](#get-started)
+- [Of note ...](#of-note-)
+- [Schema Operations](#schema-operations)
+  - [castToSchema](#casttochema)
+  - [conformToSchema](#conformtoschema)
+  - [filterToSchema](#filtertochema)
+- [Column Operations](#column-operations)
+- [Creating nested data](#creating-nested-data)
+- [More examples](#more-examples)
+
 ## Features
 - Turns messy data -> ✨🍰 pretty, spreadsheet-like data-as-code
 - Drop **TestD.scala** in any Spark project like a header file
@@ -146,6 +158,26 @@ filteredDf.show()
 |  2|2023-01-02|  88.8|  true |
 |  3|2023-01-03|  77.7| false |
 +---+----------+------+-------+
+```
+
+#### `fromDf`
+   
+Convert a Spark DataFrame back to TestD:
+```scala
+val df = spark.createDataFrame(Seq(
+  (1, "Alice"), 
+  (2, "Bob")
+)).toDF("id", "name")
+
+val testd = TestD.fromDf(df)
+println(testd)
+/*
+TestD(Seq(
+  ("ID"  , "NAME" ),
+  ("1"   , "Alice"),
+  ("2"   , "Bob"  )
+))
+*/
 ```
 
 ## Column Operations
