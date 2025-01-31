@@ -2,7 +2,7 @@
   <img src="pix/testd.png" width="700">
 </p>
 
-# <img src="pix/testd-logo.png" width="60">   testd _(𝛼)_
+# <img src="pix/testd-logo.png" width="60">   testd
 **Pretty, flexible, simple fixtures**
 
 A lightweight Scala [quoted-DSL](https://homepages.inf.ed.ac.uk/wadler/papers/qdsl/qdsl.pdf) to represent your test fixtures as beautiful,
