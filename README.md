@@ -6,7 +6,7 @@
 **Pretty, flexible, simple fixtures**
 
 A lightweight Scala [quoted-DSL](https://homepages.inf.ed.ac.uk/wadler/papers/qdsl/qdsl.pdf) to represent your test fixtures as beautiful,
-easy to edit, executable code. Part of [d4s](https://github.com/mattlianje/d4s)
+easy to edit, executable code. Part of [d4](https://github.com/mattlianje/d4)
 
 ## Features
 - Turns messy data -> ✨🍰 pretty, spreadsheet-like data-as-code
