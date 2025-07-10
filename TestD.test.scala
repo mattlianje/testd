@@ -42,22 +42,22 @@ class TestDTest extends munit.FunSuite {
     val tupleTestd = TestD(basicTuples)
     assertEquals(
       tupleTestd.toString,
-      """|TestD(Seq(
+      """|TestD(
          |  ("NAME" , "AGE"),
          |  ("Alice", 25   ),
          |  ("Bob"  , 30   )
-         |))""".stripMargin
+         |)""".stripMargin
     )
     assertEquals(tupleTestd.headers, Seq("NAME", "AGE"))
 
     val seqTestd = TestD(basicSeqs)
     assertEquals(
       seqTestd.toString,
-      """|TestD(Seq(
+      """|TestD(
          |  ("NAME" , "AGE" , "CITY"    ),
          |  ("Alice", 25    , "New York"),
          |  ("Bob"  , 300000, "London"  )
-         |))""".stripMargin
+         |)""".stripMargin
     )
   }
 
@@ -66,24 +66,42 @@ class TestDTest extends munit.FunSuite {
     assertEquals(testd.headers, Seq("ACTIVE", "AGE", "CITY", "NAME"))
     assertEquals(
       testd.toString,
-      """|TestD(Seq(
+      """|TestD(
          |  ("ACTIVE", "AGE", "CITY", "NAME" ),
          |  (null    , 25   , null  , "Alice"),
          |  (null    , null , "NY"  , "Bob"  ),
          |  (true    , 30   , null  , null   )
-         |))""".stripMargin
+         |)""".stripMargin
     )
 
     val withCountry = testd.withColumn("country", "USA")
     val dropped = withCountry.drop("age")
     assertEquals(
       dropped.toMap,
-      """|TestD(Seq(
+      """|TestD(
          |  Map("country" -> "USA", "name" -> "Alice"),
          |  Map("city" -> "NY", "country" -> "USA", "name" -> "Bob"),
          |  Map("active" -> true, "country" -> "USA")
-         |))""".stripMargin
+         |)""".stripMargin
     )
+  }
+
+  test("varargs constructor") {
+    val tuples = TestD(
+      ("name", "age"),
+      ("Alice", 25),
+      ("Bob", 30)
+    )
+    assertEquals(tuples.headers, Seq("NAME", "AGE"))
+    assertEquals(tuples.data.size, 3)
+
+    val sequences = TestD(
+      Seq("id", "score"),
+      Seq(1, 95),
+      Seq(2, 87)
+    )
+    assertEquals(sequences.headers, Seq("ID", "SCORE"))
+    assertEquals(sequences.data.size, 3)
   }
 
   test("json formatting") {

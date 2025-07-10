@@ -102,7 +102,7 @@ case class TestD[T](data: Seq[T]) {
       )
       .mkString(",\n")
 
-    s"TestD(Seq(\n$formattedMaps\n))"
+    s"TestD(\n$formattedMaps\n)"
   }
 
   def toDf(spark: SparkSession): DataFrame = {
@@ -186,10 +186,10 @@ case class TestD[T](data: Seq[T]) {
     val headerFormatted = formatRow(headers, true)
     val formattedRows = rows.map(row => formatRow(row))
 
-    s"""TestD(Seq(
+    s"""TestD(
       |$rowPrefix$headerFormatted),
       |${formattedRows.map(row => s"$rowPrefix$row)").mkString(",\n")}
-      |))""".stripMargin
+      |)""".stripMargin
   }
 
   def withColumn(name: String): TestD[Map[String, Any]] =
@@ -383,7 +383,18 @@ object TestD {
   import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
   import scala.collection.mutable
 
+  // def apply[T](data: Seq[T]): TestD[T] = new TestD(data)
+  def apply[T](first: T, rest: T*): TestD[T] = new TestD(first +: rest)
+
+  // Keep the Seq constructor for when you have a collection
   def apply[T](data: Seq[T]): TestD[T] = new TestD(data)
+
+  // Convenience method for maps
+  def maps(
+      first: Map[String, Any],
+      rest: Map[String, Any]*
+  ): TestD[Map[String, Any]] =
+    new TestD(first +: rest)
 
   private def normalizeColumnName(
       name: String,
