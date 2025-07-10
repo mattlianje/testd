@@ -3,7 +3,7 @@ package testd
 import org.apache.spark.sql.{SparkSession, Row}
 import org.apache.spark.sql.types._
 
-class TestDTest2 extends munit.FunSuite {
+class TestDTest extends munit.FunSuite {
 
   lazy val spark =
     SparkSession.builder().appName("TestDTest").master("local[*]").getOrCreate()
