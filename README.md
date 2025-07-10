@@ -18,20 +18,21 @@ Part of [d4](https://github.com/mattlianje/d4)
 - Bring your own interpreter
 
 ## FAQ
+
 **Why does this exist?**
-- Because test data is critical — and painful to maintain in brittle case classes, external JSON, or scattered files.
+Because test data is critical — and painful to maintain in brittle case classes, external JSON, or scattered files.
 
 **What’s the real point?**
-- **TestD** is just an algebra. You define clean tabular data once and reuse it across systems. Spark is one target - not the core.
+**TestD** is just an algebra. You define clean tabular data once and reuse it across systems. Spark is one target - not the core.
 
 **Why a spreadsheet format?**
-- Because it’s visual, writable by humans, easy to diff and battle-tested for centuries (even if derided in some CS circles).
+Because it’s visual, writable by humans, easy to diff and battle-tested for centuries (even if derided in some CS circles).
 
 **Why not use Scala literals, DataFrame code, or generators?**
-- Because they’re noisy, and tied to structure. **TestD** is readable, and delays schema application until you need it. The inspiration here is the Clojure way.
+Because they’re noisy, and tied to structure. **TestD** is readable, and delays schema application until you need it. The inspiration here is the Clojure way.
 
 **Who is this for?**
-- Anyone tired of rotting `.csv`, `.json`, or `.txt` fixtures in your `resources/`.
+Anyone tired of rotting `.csv`, `.json`, or `.txt` fixtures in your `resources/`.
 
 ## Table of Contents
 - [Features](#features)
