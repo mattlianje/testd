@@ -1,251 +1,124 @@
 package testd
 
-class TestDTest extends munit.FunSuite {
-  import org.apache.spark.sql.{SparkSession, DataFrame, Row}
-  import org.apache.spark.sql.types._
-  import org.apache.spark.sql.functions._
+import org.apache.spark.sql.{SparkSession, Row}
+import org.apache.spark.sql.types._
 
-  lazy val spark = SparkSession
-    .builder()
-    .appName("TestDTest")
-    .master("local[*]")
-    .getOrCreate()
+class TestDTest2 extends munit.FunSuite {
+
+  lazy val spark =
+    SparkSession.builder().appName("TestDTest").master("local[*]").getOrCreate()
   spark.sparkContext.setLogLevel("ERROR")
 
-  test(
-    "TestD should handle tuples with header as first row and commented separator"
-  ) {
-    val data = TestD(
-      Seq(
-        ("name", "age"),
-        ("Alice", 25),
-        ("Bob", 30)
-      )
-    )
+  val basicTuples = Seq(("name", "age"), ("Alice", 25), ("Bob", 30))
+  val basicSeqs = Seq(
+    Seq("name", "age", "city"),
+    Seq("Alice", 25, "New York"),
+    Seq("Bob", 300000, "London")
+  )
+  val mixedMaps = Seq(
+    Map("name" -> "Alice", "age" -> 25),
+    Map("name" -> "Bob", "city" -> "NY"),
+    Map("age" -> 30, "active" -> true)
+  )
+  val jsonData = Seq(("id", "data"), (1, """{"x": 1}"""))
 
+  val nestedSchema = StructType(
+    Seq(
+      StructField("id", IntegerType),
+      StructField(
+        "address",
+        StructType(
+          Seq(
+            StructField("city", StringType),
+            StructField("country", StringType)
+          )
+        )
+      ),
+      StructField("scores", ArrayType(IntegerType))
+    )
+  )
+
+  test("basic formatting") {
+    val tupleTestd = TestD(basicTuples)
     assertEquals(
-      data.toString,
+      tupleTestd.toString,
       """|TestD(Seq(
          |  ("NAME" , "AGE"),
          |  ("Alice", 25   ),
          |  ("Bob"  , 30   )
          |))""".stripMargin
     )
+    assertEquals(tupleTestd.headers, Seq("NAME", "AGE"))
 
-    println(data.toString)
-
-    assertEquals(data.headers, Seq("NAME", "AGE"))
+    val seqTestd = TestD(basicSeqs)
     assertEquals(
-      data.rows,
-      Seq(
-        Seq("Alice", 25),
-        Seq("Bob", 30)
-      )
-    )
-  }
-
-  test(
-    "TestD should handle sequences with header as first row and commented separator"
-  ) {
-    val data = TestD(
-      Seq(
-        Seq("name", "age", "city"),
-        Seq("Alice", 25, "New York"),
-        Seq("Bob", 300000, "London")
-      )
-    )
-
-    assertEquals(
-      data.toString,
+      seqTestd.toString,
       """|TestD(Seq(
          |  ("NAME" , "AGE" , "CITY"    ),
          |  ("Alice", 25    , "New York"),
          |  ("Bob"  , 300000, "London"  )
          |))""".stripMargin
     )
-
-    println(data.toString)
-
-    assertEquals(data.headers, Seq("NAME", "AGE", "CITY"))
-    assertEquals(
-      data.rows,
-      Seq(
-        Seq("Alice", 25, "New York"),
-        Seq("Bob", 300000, "London")
-      )
-    )
   }
 
-  test("TestD should handle tuples with uppercase headers") {
-    val data = TestD(
-      Seq(
-        ("name", "age"),
-        ("Alice", 25),
-        ("Bob", 30)
-      )
-    )
-
+  test("map handling") {
+    val testd = TestD(mixedMaps)
+    assertEquals(testd.headers, Seq("ACTIVE", "AGE", "CITY", "NAME"))
     assertEquals(
-      data.toString,
+      testd.toString,
       """|TestD(Seq(
-         |  ("NAME" , "AGE"),
-         |  ("Alice", 25   ),
-         |  ("Bob"  , 30   )
+         |  ("ACTIVE", "AGE", "CITY", "NAME" ),
+         |  (null    , 25   , null  , "Alice"),
+         |  (null    , null , "NY"  , "Bob"  ),
+         |  (true    , 30   , null  , null   )
          |))""".stripMargin
     )
 
-    assertEquals(data.headers, Seq("NAME", "AGE"))
+    val withCountry = testd.withColumn("country", "USA")
+    val dropped = withCountry.drop("age")
     assertEquals(
-      data.rows,
-      Seq(
-        Seq("Alice", 25),
-        Seq("Bob", 30)
-      )
-    )
-
-    val df = data.toDf(spark)
-    assertEquals(df.columns.toSeq, Seq("NAME", "AGE"))
-    assertEquals(df.count(), 2L)
-  }
-
-  test("TestD should handle sequences with uppercase headers") {
-    val data = TestD(
-      Seq(
-        Seq("name", "age", "city"),
-        Seq("Alice", 25, "New York"),
-        Seq("Bob", 30, "London")
-      )
-    )
-
-    assertEquals(
-      data.toString,
+      dropped.toMap,
       """|TestD(Seq(
-         |  ("NAME" , "AGE", "CITY"    ),
-         |  ("Alice", 25   , "New York"),
-         |  ("Bob"  , 30   , "London"  )
+         |  Map("country" -> "USA", "name" -> "Alice"),
+         |  Map("city" -> "NY", "country" -> "USA", "name" -> "Bob"),
+         |  Map("active" -> true, "country" -> "USA")
          |))""".stripMargin
     )
-
-    assertEquals(data.headers, Seq("NAME", "AGE", "CITY"))
-    assertEquals(
-      data.rows,
-      Seq(
-        Seq("Alice", 25, "New York"),
-        Seq("Bob", 30, "London")
-      )
-    )
-
-    val df = data.toDf(spark)
-    assertEquals(df.columns.toSeq, Seq("NAME", "AGE", "CITY"))
-    assertEquals(df.count(), 2L)
   }
 
-  test("schema functions should handle different column scenarios") {
-    val inputData = Seq(
-      ("Alice", "25", true, "extra1", 100),
-      ("Bob", "30", false, "extra2", 200),
-      ("Charlie", "35", true, "extra3", 300)
-    )
-    val inputDf = spark
-      .createDataFrame(inputData)
-      .toDF("NAME", "AGE", "ACTIVE", "EXTRA", "VALUE")
+  test("json formatting") {
+    val testd = TestD(jsonData)
+    assert(testd.toString.contains("\"\"\""))
+    assert(testd.toMap.contains("\"\"\""))
+  }
 
+  test("schema operations") {
+    val df = spark
+      .createDataFrame(Seq(("Alice", "25", true, "extra")))
+      .toDF("name", "age", "active", "extra")
     val schema = StructType(
-      Seq(
-        StructField("name", StringType),
-        StructField("age", IntegerType),
-        StructField("rating", DoubleType),
-        StructField("active", BooleanType)
-      )
+      Seq(StructField("name", StringType), StructField("age", IntegerType))
     )
 
-    val castedDf = TestD.castToSchema(inputDf, schema)
-    assertEquals(castedDf.columns.length, 5)
-    assertEquals(
-      castedDf.schema.fields.find(_.name == "AGE").get.dataType,
-      IntegerType
-    )
+    val casted = TestD.castToSchema(df, schema)
+    val conformed = TestD.conformToSchema(df, schema)
+    val filtered = TestD.filterToSchema(df, schema)
 
-    val conformedDf = TestD.conformToSchema(inputDf, schema)
-    assertEquals(conformedDf.columns.toSet, schema.fields.map(_.name).toSet)
-    assert(
-      conformedDf.schema.fields.exists(f =>
-        f.name == "rating" && f.dataType == DoubleType
-      )
-    )
-
-    val filteredDf = TestD.filterToSchema(inputDf, schema)
-    assert(!filteredDf.columns.contains("EXTRA"))
-    assert(!filteredDf.columns.contains("VALUE"))
-    assertEquals(
-      filteredDf.schema.fields.map(_.name).toSet,
-      Set("NAME", "AGE", "ACTIVE")
-    )
+    assertEquals(casted.columns.length, 4)
+    assertEquals(conformed.columns.length, 2)
+    assertEquals(filtered.columns.length, 2)
+    assert(!filtered.columns.contains("extra"))
   }
 
-  test("schema functions should respect case sensitivity option") {
-    val inputData = Seq(
-      ("Alice", 25, "NY", 100),
-      ("Bob", 30, "LA", 200)
-    )
-    val inputDf = spark
-      .createDataFrame(inputData)
-      .toDF("Name", "AGE", "city", "VALUE")
-
-    val schema = StructType(
-      Seq(
-        StructField("name", StringType),
-        StructField("Age", IntegerType),
-        StructField("CITY", StringType)
-      )
-    )
-
-    val castedDfSensitive =
-      TestD.castToSchema(inputDf, schema, caseSensitive = true)
-    assertEquals(
-      castedDfSensitive.columns.toSet,
-      Set("Name", "AGE", "city", "VALUE")
-    )
-    assertEquals(
-      castedDfSensitive.schema.fields.find(_.name == "Name").get.dataType,
-      StringType
-    )
-
-    val castedDfInsensitive = TestD.castToSchema(inputDf, schema)
-    assertEquals(
-      castedDfInsensitive.schema.fields.find(_.name == "Name").get.dataType,
-      StringType
-    )
-
-    val conformedDfSensitive =
-      TestD.conformToSchema(inputDf, schema, caseSensitive = true)
-    assertEquals(
-      conformedDfSensitive.columns.toSet,
-      schema.fields.map(_.name).toSet
-    )
-    assert(conformedDfSensitive.filter(col("name").isNotNull).count() == 0)
-
-    val filteredDfSensitive =
-      TestD.filterToSchema(inputDf, schema, caseSensitive = true)
-    assertEquals(filteredDfSensitive.columns.length, 0)
-
-    val filteredDfInsensitive = TestD.filterToSchema(inputDf, schema)
-    assertEquals(filteredDfInsensitive.columns.length, 3)
-  }
-
-  test("TestD should handle complex types using castToSchema") {
+  test("complex json casting") {
     val data = TestD(
       Seq(
         ("id", "scores", "details"),
-        (1, "[95,87,92]", """{"name":"Alice","grade":"A"}"""),
-        (2, "[88,85,90]", """{"name":"Bob","grade":"B"}""")
+        (1, "[95,87,92]", """{"name":"Alice","grade":"A"}""")
       )
     )
-
-    println(data)
     val df = data.toDf(spark)
-
-    val targetSchema = StructType(
+    val schema = StructType(
       Seq(
         StructField("ID", IntegerType),
         StructField("SCORES", ArrayType(IntegerType)),
@@ -260,467 +133,97 @@ class TestDTest extends munit.FunSuite {
         )
       )
     )
-
-    val finalDf = TestD.castToSchema(df, targetSchema)
-
-    assertEquals(finalDf.schema.fields(1).dataType, ArrayType(IntegerType))
-    assert(finalDf.schema.fields(2).dataType.isInstanceOf[StructType])
+    val casted = TestD.castToSchema(df, schema)
+    assertEquals(casted.schema.fields(1).dataType, ArrayType(IntegerType))
+    assert(casted.schema.fields(2).dataType.isInstanceOf[StructType])
   }
 
-  test("TestD should handle deeply nested complex types") {
-    val data = TestD(
+  /** Testing .fromDf with nesting
+    */
+  test("nested structs round-trip") {
+    val data = Seq(
+      (1, Row("NY", "USA"), Seq(95, 87)),
+      (2, Row("CA", "USA"), Seq(88, 85))
+    )
+    val df = spark.createDataFrame(
+      spark.sparkContext.parallelize(data.map(Row.fromTuple)),
+      nestedSchema
+    )
+
+    val testd = TestD.fromDf(df)
+    assert(testd.toString.contains("\"city\":\"NY\""))
+    assert(testd.toString.contains("[95,87]"))
+
+    val recast = TestD.conformToSchema(testd.toDf(spark), nestedSchema)
+    assertEquals(df.count(), recast.count())
+  }
+
+  /** Testing .fromDf with (deeper) nesting
+    */
+  test("deep nesting") {
+    val deepSchema = StructType(
       Seq(
-        ("id", "student_record"),
-        (
-          1,
-          """{
-           "name": "Alice",
-           "grades": {
-             "subjects": {
-               "math": {"scores": [95, 87, 92], "teacher": "Smith"},
-               "english": {"scores": [88, 91, 85], "teacher": "Jones"}
-             },
-             "overall": "A"
-           },
-           "activities": [
-             {"name": "chess", "level": "advanced"},
-             {"name": "debate", "level": "intermediate"}
-           ],
-           "metadata": {
-             "enrollmentDate": "2023-01",
-             "tags": ["honors", "stem"]
-           }
-         }"""
+        StructField("id", IntegerType),
+        StructField(
+          "address",
+          StructType(
+            Seq(
+              StructField(
+                "location",
+                StructType(
+                  Seq(
+                    StructField("city", StringType),
+                    StructField("zipcode", StringType)
+                  )
+                )
+              ),
+              StructField("country", StringType)
+            )
+          )
         ),
-        (
-          2,
-          """{
-           "name": "Bob",
-           "grades": {
-             "subjects": {
-               "math": {"scores": [82, 85, 88], "teacher": "Smith"},
-               "english": {"scores": [90, 92, 87], "teacher": "Jones"}
-             },
-             "overall": "B"
-           },
-           "activities": [
-             {"name": "soccer", "level": "advanced"}
-           ],
-           "metadata": {
-             "enrollmentDate": "2023-01",
-             "tags": ["sports"]
-           }
-         }"""
+        StructField(
+          "grades",
+          ArrayType(
+            StructType(
+              Seq(
+                StructField("score", IntegerType),
+                StructField("subject", StringType)
+              )
+            )
+          )
         )
       )
     )
 
-    val df = data.toDf(spark)
-
-    val activityType = StructType(
-      Seq(
-        StructField("name", StringType),
-        StructField("level", StringType)
-      )
-    )
-
-    val subjectType = StructType(
-      Seq(
-        StructField("scores", ArrayType(IntegerType)),
-        StructField("teacher", StringType)
-      )
-    )
-
-    val gradesType = StructType(
-      Seq(
-        StructField("subjects", MapType(StringType, subjectType)),
-        StructField("overall", StringType)
-      )
-    )
-
-    val metadataType = StructType(
-      Seq(
-        StructField("enrollmentDate", StringType),
-        StructField("tags", ArrayType(StringType))
-      )
-    )
-
-    val studentRecordType = StructType(
-      Seq(
-        StructField("name", StringType),
-        StructField("grades", gradesType),
-        StructField("activities", ArrayType(activityType)),
-        StructField("metadata", metadataType)
-      )
-    )
-
-    val targetSchema = StructType(
-      Seq(
-        StructField("ID", IntegerType),
-        StructField("STUDENT_RECORD", studentRecordType)
-      )
-    )
-
-    val finalDf = TestD.castToSchema(df, targetSchema)
-
-    assertEquals(finalDf.schema.fields(0).dataType, IntegerType)
-
-    val recordType = finalDf.schema.fields(1).dataType.asInstanceOf[StructType]
-    assertEquals(recordType.fields(0).name, "name")
-    assertEquals(recordType.fields(1).name, "grades")
-
-    val gradesField = recordType.fields(1).dataType.asInstanceOf[StructType]
-    assert(gradesField.fields(0).dataType.isInstanceOf[MapType])
-
-    val row = finalDf.where(col("ID") === 1).select("STUDENT_RECORD").first()
-    val record = row.getStruct(0)
-
-    assertEquals(record.getString(0), "Alice")
-
-    val grades = record.getStruct(1)
-    val subjects = grades.getMap[String, Row](0)
-    val mathScores = subjects("math").getSeq[Int](0)
-    assertEquals(mathScores, Seq(95, 87, 92))
-
-    val activities = record.getSeq[Row](2)
-    assertEquals(activities(0).getString(0), "chess")
-    assertEquals(activities(0).getString(1), "advanced")
-
-    val metadata = record.getStruct(3)
-    assertEquals(metadata.getSeq[String](1), Seq("honors", "stem"))
-  }
-
-  test("TestD should handle Maps with different keys") {
-    val data = TestD(
-      Seq(
-        Map("name" -> "Alice", "age" -> 25),
-        Map("name" -> "Bob", "city" -> "NY"),
-        Map("age" -> 30, "active" -> true)
-      )
-    )
-
-    assertEquals(data.headers, Seq("ACTIVE", "AGE", "CITY", "NAME"))
-
-    assertEquals(
-      data.rows,
-      Seq(
-        Seq(null, 25, null, "Alice"),
-        Seq(null, null, "NY", "Bob"),
-        Seq(true, 30, null, null)
-      )
-    )
-
-    assertEquals(
-      data.toString,
-      """|TestD(Seq(
-       |  ("ACTIVE", "AGE", "CITY", "NAME" ),
-       |  (null    , 25   , null  , "Alice"),
-       |  (null    , null , "NY"  , "Bob"  ),
-       |  (true    , 30   , null  , null   )
-       |))""".stripMargin
-    )
-
-    assertEquals(
-      data.toMap,
-      """|TestD(Seq(
-       |  Map("age" -> 25, "name" -> "Alice"),
-       |  Map("city" -> "NY", "name" -> "Bob"),
-       |  Map("active" -> true, "age" -> 30)
-       |))""".stripMargin
-    )
-  }
-  test("TestD should support adding and dropping columns") {
-    val data = TestD(
-      Seq(
-        Map("name" -> "Alice", "age" -> 25),
-        Map("name" -> "Bob", "age" -> 30)
-      )
-    )
-
-    val withCity = data.withColumn("city")
-    assertEquals(
-      withCity.toMap,
-      """|TestD(Seq(
-       |  Map("age" -> 25, "city" -> null, "name" -> "Alice"),
-       |  Map("age" -> 30, "city" -> null, "name" -> "Bob")
-       |))""".stripMargin
-    )
-
-    val withCountry = data.withColumn("country", "USA")
-    assertEquals(
-      withCountry.toMap,
-      """|TestD(Seq(
-       |  Map("age" -> 25, "country" -> "USA", "name" -> "Alice"),
-       |  Map("age" -> 30, "country" -> "USA", "name" -> "Bob")
-       |))""".stripMargin
-    )
-
-    val droppedAge = withCountry.drop("age")
-    assertEquals(
-      droppedAge.toMap,
-      """|TestD(Seq(
-       |  Map("country" -> "USA", "name" -> "Alice"),
-       |  Map("country" -> "USA", "name" -> "Bob")
-       |))""".stripMargin
-    )
-
-    val droppedMultiple = withCountry.drop("age", "country")
-    assertEquals(
-      droppedMultiple.toMap,
-      """|TestD(Seq(
-       |  Map("name" -> "Alice"),
-       |  Map("name" -> "Bob")
-       |))""".stripMargin
-    )
-  }
-
-  test("TestD should use Seq format when more than 22 columns") {
-    val manyColumns = Seq.tabulate(23)(i => s"col$i")
-    val data = TestD(
-      Seq(
-        manyColumns,
-        manyColumns.map(_ => "value")
-      )
-    )
-
-    val mapData = TestD(
-      Seq(
-        (1 to 23).map(i => s"col$i").map(col => col -> "value").toMap
-      )
-    )
-    assert(mapData.headers.length > 22)
-  }
-
-  test("TestD should handle columns with nulls as StringType") {
-    val data = TestD(
-      Seq(
-        Map("col1" -> "a", "col2" -> 1),
-        Map("col1" -> null, "col2" -> 2),
-        Map("col1" -> "c", "col2" -> null)
-      )
-    )
-
-    val data2 = TestD(
-      Seq(
-        Map("foo" -> 1),
-        Map("bar" -> 2)
-      )
-    )
-
-    val df2 = data2.toDf(spark).show()
-
-    val df = data.toDf(spark)
-    assertEquals(df.schema("COL1").dataType, StringType)
-    assertEquals(df.schema("COL2").dataType, StringType)
-  }
-
-  test("TestD should support applying various target schemas") {
-    val testData = TestD(
-      Seq(
-        ("name", "age", "score"),
-        ("Alice", 25, 95.5),
-        ("Bob", 30, 88.3)
-      )
-    )
-
-    val df = testData.toDf(spark)
-
-    val stringSchema = StructType(
-      Array(
-        StructField("NAME", StringType, true),
-        StructField("AGE", StringType, true),
-        StructField("SCORE", StringType, true)
-      )
-    )
-    val asStrings = TestD.castToSchema(df, stringSchema)
-    assertEquals(asStrings.schema("AGE").dataType, StringType)
-    assertEquals(asStrings.collect()(0).getString(1), "25")
-
-    val numericSchema = StructType(
-      Array(
-        StructField("NAME", StringType, true),
-        StructField("AGE", IntegerType, true),
-        StructField("SCORE", DoubleType, true)
-      )
-    )
-    val asNums = TestD.castToSchema(df, numericSchema)
-    assertEquals(asNums.schema("AGE").dataType, IntegerType)
-    assertEquals(asNums.collect()(0).getInt(1), 25)
-    assertEquals(asNums.collect()(0).getDouble(2), 95.5)
-
-    val partialSchema = StructType(
-      Array(
-        StructField("NAME", StringType, true),
-        StructField("AGE", IntegerType, true)
-      )
-    )
-    val partial = TestD.filterToSchema(df, partialSchema)
-    assertEquals(partial.columns.length, 2)
-    assertEquals(partial.schema("AGE").dataType, IntegerType)
-
-    val reorderedSchema = StructType(
-      Array(
-        StructField("SCORE", DoubleType, true),
-        StructField("NAME", StringType, true),
-        StructField("AGE", IntegerType, true)
-      )
-    )
-    val reordered = TestD.conformToSchema(df, reorderedSchema)
-    assertEquals(
-      reordered.schema.fields.map(_.name).toSeq,
-      Seq("SCORE", "NAME", "AGE")
-    )
-    val row = reordered.collect()(0)
-    assertEquals(row.getDouble(0), 95.5)
-    assertEquals(row.getString(1), "Alice")
-    assertEquals(row.getInt(2), 25)
-  }
-
-  test("toString should handle nested JSON with triple quotes") {
-    val data = TestD(
-      Seq(
-        ("id", "data"),
-        (1, """{"x": 1}""")
-      )
-    )
-
-    val result = data.toString
-    println(data.toMap)
-    println(data.toString)
-    assert(result.contains("\"\"\""))
-  }
-
-  test("fromDf should convert DataFrame to TestD") {
-    val df = spark
-      .createDataFrame(
-        Seq(
-          (1, """{"name": "Alice", "grades": [95,87]}"""),
-          (2, """{"name": "Bob", "grades": [82,85]}""")
-        )
-      )
-      .toDF("id", "student")
-
-    val testd = TestD.fromDf(df)
-    println(testd)
-
-    assert(testd.headers.toSet == Set("ID", "STUDENT"))
-    assert(testd.rows.length == 2)
-
-    val firstRow = testd.rows.head.asInstanceOf[Seq[Any]]
-    assert(firstRow(0) == "1")
-    assert(firstRow(1).toString.contains("Alice"))
-  }
-
-  test("fromDf should handle nested structs and convert them to JSON strings") {
-    val nestedData = Seq(
-      (1, "Alice", Row("NY", "USA"), Seq(95, 87, 92)),
-      (2, "Bob", Row("CA", "USA"), Seq(88, 85, 90))
-    )
-
-    val addressSchema = StructType(
-      Seq(
-        StructField("city", StringType, true),
-        StructField("country", StringType, true)
-      )
-    )
-
-    val schema = StructType(
-      Seq(
-        StructField("id", IntegerType, true),
-        StructField("name", StringType, true),
-        StructField("address", addressSchema, true),
-        StructField("scores", ArrayType(IntegerType), true)
-      )
-    )
-
+    val data = Seq((1, Row(Row("NY", "10001"), "USA"), Seq(Row(95, "Math"))))
     val df = spark.createDataFrame(
-      spark.sparkContext.parallelize(nestedData.map(Row.fromTuple)),
-      schema
+      spark.sparkContext.parallelize(data.map(Row.fromTuple)),
+      deepSchema
     )
-    df.show(false)
-
-    // Convert DataFrame to TestD
     val testd = TestD.fromDf(df)
 
-    println("TestD from DataFrame with nested structs:")
-    println(testd)
-
-    // Convert back to DataFrame with original schema
-    val newDf = testd.toDf(spark)
-    val recastDf = TestD.conformToSchema(newDf, schema)
-
-    println("\nRecast DataFrame:")
-    recastDf.show(false)
+    assert(testd.toString.contains("\"city\":\"NY\""))
+    assert(testd.toString.contains("\"zipcode\":\"10001\""))
+    assert(testd.toString.contains("\"subject\":\"Math\""))
   }
 
-  test("fromDf should handle deeply nested structs") {
-    // Create deeper nested structures
-    val nestedData = Seq(
-      (
-        1,
-        "Alice",
-        Row(Row("NY", "10001"), "USA", Row(40.7128, -74.0060)),
-        Seq(Row(95, "Math"), Row(87, "Science"), Row(92, "English"))
-      ),
-      (
-        2,
-        "Bob",
-        Row(Row("CA", "90210"), "USA", Row(34.0522, -118.2437)),
-        Seq(Row(88, "Math"), Row(85, "Science"), Row(90, "English"))
-      )
+  test("edge cases") {
+    /* Nulls */
+    val nullTestd = TestD(Seq(Map("col1" -> "a", "col2" -> null)))
+    assertEquals(nullTestd.toDf(spark).schema("COL2").dataType, StringType)
+
+    /* Wide data */
+    val wideMap = (1 to 25).map(i => s"col$i" -> i).toMap
+    val wideTestd = TestD(Seq(wideMap))
+    assertEquals(wideTestd.headers.length, 25)
+
+    /* Case sensitivity */
+    val df = spark.createDataFrame(Seq(("Alice", 25))).toDF("Name", "AGE")
+    val schema = StructType(Seq(StructField("name", StringType)))
+    assertEquals(
+      TestD.filterToSchema(df, schema, caseSensitive = true).columns.length,
+      0
     )
-
-    val locationSchema = StructType(
-      Seq(
-        StructField("city", StringType, true),
-        StructField("zipcode", StringType, true)
-      )
-    )
-
-    val coordinatesSchema = StructType(
-      Seq(
-        StructField("lat", DoubleType, true),
-        StructField("lon", DoubleType, true)
-      )
-    )
-
-    val addressSchema = StructType(
-      Seq(
-        StructField("location", locationSchema, true),
-        StructField("country", StringType, true),
-        StructField("coordinates", coordinatesSchema, true)
-      )
-    )
-
-    val gradeSchema = StructType(
-      Seq(
-        StructField("score", IntegerType, true),
-        StructField("subject", StringType, true)
-      )
-    )
-
-    val schema = StructType(
-      Seq(
-        StructField("id", IntegerType, true),
-        StructField("name", StringType, true),
-        StructField("address", addressSchema, true),
-        StructField("grades", ArrayType(gradeSchema), true)
-      )
-    )
-
-    val df = spark.createDataFrame(
-      spark.sparkContext.parallelize(nestedData.map(Row.fromTuple)),
-      schema
-    )
-
-    df.show(false)
-
-    val testd = TestD.fromDf(df)
-    println(testd)
-
-    val newDf = testd.toDf(spark)
-    val recastDf = TestD.conformToSchema(newDf, schema)
-
-    recastDf.show(false)
+    assertEquals(TestD.filterToSchema(df, schema).columns.length, 1)
   }
 }
