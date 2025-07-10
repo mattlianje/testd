@@ -19,10 +19,10 @@ Part of [d4](https://github.com/mattlianje/d4)
 
 ## FAQ
 
-**Why does this exist?**
+**Why does this exist?**  
 Because test data is critical — and painful to maintain in brittle case classes, external JSON, or scattered files.
 
-**What’s the real point?**
+**What’s the real point?**  
 **TestD** is just an algebra. You define clean tabular data once and reuse it across systems. Spark is one target - not the core.
 
 **Why a spreadsheet format?**
