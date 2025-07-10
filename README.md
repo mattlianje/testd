@@ -50,7 +50,7 @@ Part of [d4](https://github.com/mattlianje/d4)
 
 ## Get started
 > [!WARNING]  
-> TestD is still unstable. Breaking API changes might happen
+> TestD API is still undergoing tweaks. Breaking changes might happen
 
 Load the latest `master` in your spark-shell:
 ```bash
