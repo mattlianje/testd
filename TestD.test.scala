@@ -611,4 +611,116 @@ class TestDTest extends munit.FunSuite {
     assert(firstRow(1).toString.contains("Alice"))
   }
 
+  test("fromDf should handle nested structs and convert them to JSON strings") {
+    val nestedData = Seq(
+      (1, "Alice", Row("NY", "USA"), Seq(95, 87, 92)),
+      (2, "Bob", Row("CA", "USA"), Seq(88, 85, 90))
+    )
+
+    val addressSchema = StructType(
+      Seq(
+        StructField("city", StringType, true),
+        StructField("country", StringType, true)
+      )
+    )
+
+    val schema = StructType(
+      Seq(
+        StructField("id", IntegerType, true),
+        StructField("name", StringType, true),
+        StructField("address", addressSchema, true),
+        StructField("scores", ArrayType(IntegerType), true)
+      )
+    )
+
+    val df = spark.createDataFrame(
+      spark.sparkContext.parallelize(nestedData.map(Row.fromTuple)),
+      schema
+    )
+    df.show(false)
+
+    // Convert DataFrame to TestD
+    val testd = TestD.fromDf(df)
+
+    println("TestD from DataFrame with nested structs:")
+    println(testd)
+
+    // Convert back to DataFrame with original schema
+    val newDf = testd.toDf(spark)
+    val recastDf = TestD.conformToSchema(newDf, schema)
+
+    println("\nRecast DataFrame:")
+    recastDf.show(false)
+  }
+
+  test("fromDf should handle deeply nested structs") {
+    // Create deeper nested structures
+    val nestedData = Seq(
+      (
+        1,
+        "Alice",
+        Row(Row("NY", "10001"), "USA", Row(40.7128, -74.0060)),
+        Seq(Row(95, "Math"), Row(87, "Science"), Row(92, "English"))
+      ),
+      (
+        2,
+        "Bob",
+        Row(Row("CA", "90210"), "USA", Row(34.0522, -118.2437)),
+        Seq(Row(88, "Math"), Row(85, "Science"), Row(90, "English"))
+      )
+    )
+
+    val locationSchema = StructType(
+      Seq(
+        StructField("city", StringType, true),
+        StructField("zipcode", StringType, true)
+      )
+    )
+
+    val coordinatesSchema = StructType(
+      Seq(
+        StructField("lat", DoubleType, true),
+        StructField("lon", DoubleType, true)
+      )
+    )
+
+    val addressSchema = StructType(
+      Seq(
+        StructField("location", locationSchema, true),
+        StructField("country", StringType, true),
+        StructField("coordinates", coordinatesSchema, true)
+      )
+    )
+
+    val gradeSchema = StructType(
+      Seq(
+        StructField("score", IntegerType, true),
+        StructField("subject", StringType, true)
+      )
+    )
+
+    val schema = StructType(
+      Seq(
+        StructField("id", IntegerType, true),
+        StructField("name", StringType, true),
+        StructField("address", addressSchema, true),
+        StructField("grades", ArrayType(gradeSchema), true)
+      )
+    )
+
+    val df = spark.createDataFrame(
+      spark.sparkContext.parallelize(nestedData.map(Row.fromTuple)),
+      schema
+    )
+
+    df.show(false)
+
+    val testd = TestD.fromDf(df)
+    println(testd)
+
+    val newDf = testd.toDf(spark)
+    val recastDf = TestD.conformToSchema(newDf, schema)
+
+    recastDf.show(false)
+  }
 }
