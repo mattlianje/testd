@@ -29,7 +29,8 @@ Because test data is critical - and painful to maintain in brittle case classes,
 Because it’s visual, writable by humans, easy to diff and battle-tested for centuries (even if derided in some CS circles).
 
 **Q: Why not use Scala literals, DataFrame code, or generators?**  
-Because they’re noisy, and tied to structure. **TestD** is readable, and delays schema application until you need it. The inspiration here is the Clojure way.
+Because they’re noisy, and tied to structure. **TestD** is readable, and delays schema application until you need it. The inspiration
+here is the Clojure/Lisp-y code-as-data way.
 
 **Q: Who is this for?**  
 Anyone tired of rotting `.csv`, `.json`, or `.txt` fixtures in your `resources/`.
