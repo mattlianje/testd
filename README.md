@@ -25,13 +25,13 @@ Because test data is critical — and painful to maintain in brittle case classe
 **What’s the real point?**  
 **TestD** is just an algebra. You define clean tabular data once and reuse it across systems. Spark is one target - not the core.
 
-**Why a spreadsheet format?**
+**Why a spreadsheet format?**  
 Because it’s visual, writable by humans, easy to diff and battle-tested for centuries (even if derided in some CS circles).
 
-**Why not use Scala literals, DataFrame code, or generators?**
+**Why not use Scala literals, DataFrame code, or generators?**  
 Because they’re noisy, and tied to structure. **TestD** is readable, and delays schema application until you need it. The inspiration here is the Clojure way.
 
-**Who is this for?**
+**Who is this for?**  
 Anyone tired of rotting `.csv`, `.json`, or `.txt` fixtures in your `resources/`.
 
 ## Table of Contents
