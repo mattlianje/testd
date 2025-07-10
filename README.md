@@ -10,12 +10,12 @@ Part of [d4](https://github.com/mattlianje/d4)
 
 ## Features
 - TestD is a tiny algebra for tabular test data
-- Spreadsheet-like auto-formatted `TestD((...))` blocks
-- Delays schema binding - cast only when needed
+- Spreadsheet-like data-as-code 🍰
+- Re-usable, composable fixtures
 - Ships with Spark integration (`.toDf`, `.fromDf`, schema helpers)
 - Works beautifully in REPL
-- Drop **TestD.scala** into any Spark project like a header file
-- Currently targets Spark - (but bring your own interpreters)
+- Drop **TestD.scala** in like a header file
+- Bring your own interpreter
 
 ## FAQ
 - **Why does this exist?**
