@@ -5,23 +5,45 @@
 # <img src="pix/testd-logo.png" width="60">   testd
 **Pretty, flexible, simple fixtures**
 
-A lightweight Scala [quoted-DSL](https://homepages.inf.ed.ac.uk/wadler/papers/qdsl/qdsl.pdf) to represent your test fixtures as beautiful,
-easy to edit, executable code. Part of [d4](https://github.com/mattlianje/d4)
+A lightweight Scala DSL for expressing test fixtures as beautiful, editable, executable, and re-usable code.
+Part of [d4](https://github.com/mattlianje/d4)
 
 ## Features
-- Turns messy data -> ✨🍰 pretty, spreadsheet-like data-as-code
-- Drop **TestD.scala** in any Spark project like a header file
-- Lets Spark casting do the heavy lifting
-- Move from REPL to unit tests for TDD style ETL
+- TestD is a tiny algebra for tabular test data
+- Spreadsheet-like auto-formatted `TestD((...))` blocks
+- Delays schema binding - cast only when needed
+- Ships with Spark integration (`.toDf`, `.fromDf`, schema helpers)
+- Works beautifully in REPL
+- Drop **TestD.scala** into any Spark project like a header file
+- Currently targets Spark - (but bring your own interpreters)
+
+## FAQ
+- **Why does this exist?**
+Because test data is critical — and painful to maintain in brittle case classes, external JSON, or scattered files.
+
+- **What’s the real point?**
+**TestD** is just an algebra. You define clean tabular data once and reuse it across systems. Spark is one target - not the core.
+
+- **Why a spreadsheet format?**
+Because it’s visual, writable by humans, easy to diff and battle-tested for centuries (even if derided in some CS circles).
+
+- **Why not use Scala literals, DataFrame code, or generators?**
+Because they’re noisy, and tied to structure. **TestD** is readable, and delays schema application until you need it.
+The inspiration here is the Clojure way.
+
+- **Who is this for?**
+Anyone tired of rotting `.csv`, `.json`, or `.txt` fixtures in your `resources/`.
 
 ## Table of Contents
 - [Features](#features)
+- [FAQ](#faq)
 - [Get Started](#get-started)
-- [Of note ...](#of-note-)
 - [Schema Operations](#schema-operations)
   - [castToSchema](#casttochema)
   - [conformToSchema](#conformtoschema)
   - [filterToSchema](#filtertochema)
+  - [fromDf](#fromdf)
+- [toMap](#tomap)
 - [Column Operations](#column-operations)
 - [Creating nested data](#creating-nested-data)
 - [More examples](#more-examples)
@@ -29,19 +51,9 @@ easy to edit, executable code. Part of [d4](https://github.com/mattlianje/d4)
 
 ## Get started
 > [!WARNING]  
-> Releases sub `1.0.0` are experimental. Breaking API changes might happen
+> TestD is still unstable. Breaking API changes might happen
 
-Want to try? **TestD** is on the Maven Central repo [here](https://central.sonatype.com/artifact/io.github.mattlianje/testd_2.13). Add it to your library dependencies:
-```scala
-"xyz.matthieucourt" % "testd_2.13" % "0.1.2"
-```
-
-Using scala-cli
-```
-scala-cli repl --dep org.apache.spark::spark-sql:3.5.0 \
-               --dep xyz.matthieucourt::testd_2.13:0.1.2
-```
-Or load the latest `master` in your spark-shell:
+Load the latest `master` in your spark-shell:
 ```bash
 spark-shell -i <(curl -sL https://raw.githubusercontent.com/mattlianje/testd/master/TestD.scala)
 ```
@@ -76,14 +88,9 @@ TestD(Seq(
 ```
 4. Use the 3 **TestD** schema operations below.
 
-## Of note ...
-- Ultimately **TestD** is a dead-simple little DSL, but it puts forward a new "code is the data" approach.
-- The spreadsheet format is sometimes derided in CS circles, but has been battle-tested and loved for centuries.
-- The idea is for your fixtures to be "representations" of your data and not materialized instances already bound to a target schema.
-- ^ This is why **TestD** has some built-in niceties for casting, filtering, and conforming the representations of your dataframes.
 
 ## Schema Operations
-There are 3 building blocks with **TestD** casting: `castToSchema`, `conformToSchema`, `filterToSchema`
+TestD gives you three tools for aligning messy data to a target schema — depending on how strict or flexible you want to be.
 
 Imagine ...
 - We create a quick and messy DataFrame:
@@ -109,8 +116,8 @@ val schema = StructType(Seq(
 ```
 
 #### `castToSchema`
-   
-Cast DataFrame columns if they exist in schema, preserves structure:
+**Gently cast what's there. Ignore the rest.**
+Casts only the columns that exist in both the DataFrame and the schema. Leaves extra columns untouched.
 ```scala
 val castedDf = TestD.castToSchema(messyDf, schema)
 castedDf.show()
@@ -126,8 +133,8 @@ castedDf.show()
 ```
 
 #### `conformToSchema`
-   
-Makes DataFrame match exactly - handles missing/extra columns:
+**Force it to match exactly.**
+Keeps only schema-defined columns. Adds nulls for missing ones. Drops any extras.
 ```scala
 val conformedDf = TestD.conformToSchema(messyDf, schema)
 conformedDf.show()
@@ -143,8 +150,8 @@ conformedDf.show()
 ```
 
 #### `filterToSchema`
-   
-Keeps only DataDrame columns if names exist in schema
+**Keep only what matches.**
+Strips away all columns not present in the schema. No casting - just column selection.
 
 ```scala
 val extraDf = messyDf.withColumn("EXTRA", lit("unwanted"))
@@ -163,7 +170,7 @@ filteredDf.show()
 
 #### `fromDf`
    
-Convert a Spark DataFrame back to TestD:
+Convert a Spark DataFrame back to **TestD**:
 ```scala
 val df = spark.createDataFrame(Seq(
   (1, "Alice"), 
@@ -180,6 +187,33 @@ TestD(Seq(
 ))
 */
 ```
+
+## `toMap` 
+You can create a **TestD** from a Map and vice-versa.
+
+**Why is this so useful?** Because a Seq[Map[String, Any]] is structurally isomorphic to a spreadsheet:
+
+- Each Map = one row
+- Keys = column names
+- Missing keys? --> nulls (just like Excel)
+
+```scala
+val data = Seq(
+  Map("id" -> 1, "name" -> "Alice"),
+  Map("id" -> 2) /* no name */
+)
+
+val testd = TestD.fromMap(data)
+println(testd)
+/*
+TestD(Seq(
+  ("ID", "NAME" ),
+  ("1",  "Alice"),
+  ("2",  null   )
+))
+*/
+```
+
 
 ## Column Operations
 **TestD** makes it dead simple to manipulate your test data, just like you would with a Spark DataFrame
@@ -248,19 +282,6 @@ TestD(Seq(
   ("A101"    , "Acme Corp", 5     , 299.99  ),
   ("B202"    , "Globex"   , 1     , 499.50  ),
   ("C303"    , "Initech"  , 3     , 799.99  )
-))
-*/
-```
-
-Convert to a Map representation for comparison or serialization
-```scala
-val mapRepresentation = orders.toMap
-println(mapRepresentation)
-/*
-TestD(Seq(
-  Map("order_id" -> "A101", "customer" -> "Acme Corp", "items" -> 5, "total" -> 299.99, "priority" -> "HIGH"),
-  Map("order_id" -> "B202", "customer" -> "Globex", "items" -> 1, "total" -> 499.50, "priority" -> "LOW"),
-  Map("order_id" -> "C303", "customer" -> "Initech", "items" -> 3, "total" -> 799.99, "priority" -> "HIGH")
 ))
 */
 ```
