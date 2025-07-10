@@ -20,7 +20,7 @@ Part of [d4](https://github.com/mattlianje/d4)
 ## FAQ
 
 **Q: Why does this exist?**  
-Because test data is critical — and painful to maintain in brittle case classes, external JSON, or scattered files.
+Because test data is critical - and painful to maintain in brittle case classes, external JSON, or scattered files.
 
 **Q: What’s the real point?**  
 **TestD** is just an algebra. You define clean tabular data once and reuse it across systems. Spark is one target - not the core.
