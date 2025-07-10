@@ -12,7 +12,7 @@ Part of [d4](https://github.com/mattlianje/d4)
 - TestD is a tiny algebra for tabular test data
 - Spreadsheet-like data-as-code 🍰
 - Re-usable, composable fixtures
-- Ships with Spark integration (`.toDf`, `.fromDf`, schema helpers)
+- Batteries included Spark integration
 - Works beautifully in REPL
 - Drop **TestD.scala** in like a header file
 - Bring your own interpreter
@@ -213,6 +213,7 @@ TestD(Seq(
 ))
 */
 ```
+Maps are everywhere: logs, JSON, APIs - and **TestD** gives them shape, order, and schema control.
 
 
 ## Column Operations
