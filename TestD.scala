@@ -19,6 +19,7 @@ package testd
 case class TestD[T](data: Seq[T]) {
   import org.apache.spark.sql.{SparkSession, DataFrame, Row}
   import org.apache.spark.sql.types._
+  import scala.util.Try
 
   require(data.nonEmpty, "TestD must contain at least one row (headers)")
   require(
@@ -244,6 +245,134 @@ case class TestD[T](data: Seq[T]) {
         .map(_.toString)
         .filterNot(col => upperColNames.contains(col.toUpperCase)): _*
     )
+  }
+
+  /** Union two TestD instances, combining all rows from both. Columns are
+    * aligned by name (case-insensitive), missing columns filled with null.
+    * Result always uses Map representation for consistent column handling.
+    */
+  def union(other: TestD[_]): TestD[Map[String, Any]] = {
+    // Get all unique column names from both TestDs
+    val allColumns = (this.headers.map(_.toString.toUpperCase) ++
+      other.headers.map(_.toString.toUpperCase)).distinct.sorted
+
+    // Convert both TestDs to map representation
+    val thisAsMap = if (this.data.head.isInstanceOf[Map[_, _]]) {
+      this.data.map(_.asInstanceOf[Map[String, Any]])
+    } else {
+      this.rows.map(row => this.headers.map(_.toString).zip(row).toMap)
+    }
+
+    val otherAsMap = if (other.data.head.isInstanceOf[Map[_, _]]) {
+      other.data.map(_.asInstanceOf[Map[String, Any]])
+    } else {
+      other.rows.map(row => other.headers.map(_.toString).zip(row).toMap)
+    }
+
+    // Normalize both datasets to have all columns
+    def normalizeRow(row: Map[String, Any]): Map[String, Any] = {
+      allColumns.map { col =>
+        val value = row
+          .find { case (k, _) => k.toUpperCase == col }
+          .map(_._2)
+          .getOrElse(null)
+        col -> value
+      }.toMap
+    }
+
+    val normalizedThis = thisAsMap.map(normalizeRow)
+    val normalizedOther = otherAsMap.map(normalizeRow)
+
+    new TestD(normalizedThis ++ normalizedOther)
+  }
+
+  /** Intersect two TestD instances, keeping only rows that exist in both. Rows
+    * are compared by all column values (case-insensitive for column names).
+    * Only columns present in BOTH TestDs are included in the result.
+    */
+  def intersect(other: TestD[_]): TestD[Map[String, Any]] = {
+    // Find common columns (case-insensitive)
+    val thisColumns = this.headers.map(_.toString.toUpperCase).toSet
+    val otherColumns = other.headers.map(_.toString.toUpperCase).toSet
+    val commonColumns = (thisColumns intersect otherColumns).toSeq.sorted
+
+    require(
+      commonColumns.nonEmpty,
+      "Cannot intersect TestDs with no common columns"
+    )
+
+    val thisSelected = this.select(commonColumns: _*)
+    val otherSelected = other.select(commonColumns: _*)
+
+    // Convert to normalized map repr for comparisons
+    val thisAsMap = thisSelected.data.map(_.asInstanceOf[Map[String, Any]])
+    val otherAsMap = otherSelected.data.map(_.asInstanceOf[Map[String, Any]])
+
+    // Normalized comparison keys
+    def normalizeForComparison(row: Map[String, Any]): Map[String, String] = {
+      row.map { case (k, v) =>
+        k.toUpperCase -> (if (v == null) "NULL" else v.toString)
+      }
+    }
+
+    val otherNormalized = otherAsMap.map(normalizeForComparison).toSet
+
+    val intersection = thisAsMap.filter { row =>
+      val normalized = normalizeForComparison(row)
+      otherNormalized.contains(normalized)
+    }
+
+    new TestD(intersection)
+  }
+
+  /** Check if this TestD contains all rows from another TestD. Useful for
+    * subset testing.
+    */
+  def contains(other: TestD[_]): Boolean = {
+    import scala.util.{Try, Success, Failure}
+
+    Try {
+      val intersection = this.intersect(other)
+      // Convert other to same column structure for comparison
+      val otherNormalized =
+        other.select(intersection.headers.map(_.toString): _*)
+      intersection.data.size == otherNormalized.data.size
+    }.recover { case _ =>
+      false
+    }.get
+  }
+
+  /** Remove rows that exist in another TestD (set difference). Only considers
+    * columns present in BOTH TestDs for comparison.
+    */
+  def except(other: TestD[_]): TestD[Map[String, Any]] = {
+    val intersection = this.intersect(other)
+    val intersectionNormalized = intersection.data.map { row =>
+      row.asInstanceOf[Map[String, Any]].map { case (k, v) =>
+        k.toUpperCase -> (if (v == null) "NULL" else v.toString)
+      }
+    }.toSet
+
+    // Convert this TestD to map
+    val thisAsMap = if (this.data.head.isInstanceOf[Map[_, _]]) {
+      this.data.map(_.asInstanceOf[Map[String, Any]])
+    } else {
+      this.rows.map(row => this.headers.map(_.toString).zip(row).toMap)
+    }
+
+    // Keep rows that don't match any in intersection
+    val commonColumns = intersection.headers.map(_.toString.toUpperCase).toSet
+    val result = thisAsMap.filter { row =>
+      val relevantRow = row.filter { case (k, _) =>
+        commonColumns.contains(k.toUpperCase)
+      }
+      val normalized = relevantRow.map { case (k, v) =>
+        k.toUpperCase -> (if (v == null) "NULL" else v.toString)
+      }
+      !intersectionNormalized.contains(normalized)
+    }
+
+    new TestD(result)
   }
 }
 

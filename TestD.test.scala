@@ -226,4 +226,47 @@ class TestDTest extends munit.FunSuite {
     )
     assertEquals(TestD.filterToSchema(df, schema).columns.length, 1)
   }
+
+  /** TestD composition tests
+    */
+
+  val people1 = TestD(Seq(("name", "age"), ("Alice", 25), ("Bob", 30)))
+  val people2 = TestD(
+    Seq(
+      Map("name" -> "Bob", "age" -> 30),
+      Map("name" -> "Charlie", "age" -> 35)
+    )
+  )
+
+  test("Composition - union") {
+    val result = people1.union(people2)
+    assertEquals(result.data.size, 4)
+    assertEquals(result.headers.map(_.toString).toSet, Set("AGE", "NAME"))
+  }
+
+  test("Composition - intersect") {
+    val result = people1.intersect(people2)
+    assertEquals(result.data.size, 1)
+    assertEquals(result.data.head.asInstanceOf[Map[String, Any]]("NAME"), "Bob")
+  }
+
+  test("Composition - intersect no common columns") {
+    val products = TestD(Seq(("id", "price"), (1, 100)))
+    intercept[IllegalArgumentException] {
+      people1.intersect(products)
+    }
+  }
+
+  test("Composition - contains") {
+    val subset = TestD(Seq(("name", "age"), ("Bob", 30)))
+    assert(people1.contains(subset))
+    assert(!subset.contains(people1))
+  }
+
+  test("Composition - except") {
+    val toRemove = TestD(Seq(Map("name" -> "Alice", "age" -> 25)))
+    val result = people1.except(toRemove)
+    assertEquals(result.data.size, 1)
+    assertEquals(result.data.head.asInstanceOf[Map[String, Any]]("NAME"), "Bob")
+  }
 }
