@@ -19,20 +19,20 @@ Part of [d4](https://github.com/mattlianje/d4)
 
 ## FAQ
 
-**Q: Why TestD?**  
+**Q: Why TestD?**
 - Because test data is critical - and painful to maintain in brittle case classes, external JSON, or scattered files.
 
-**Q: Sure, but why?**  
+**Q: Sure, but why?**
 - You define clean tabular data once, and reuse/compose it across systems. Spark is one target - plug in your own algebras and extension methods.
 
-**Q: Why a spreadsheet format?**  
+**Q: Why a spreadsheet format?**
 - Because it’s visual, writable by humans, easy to diff and battle-tested for centuries (even if derided in some CS circles).
 
-**Q: Why not use Scala literals, DataFrame code, or generators?**  
+**Q: Why not use Scala literals, DataFrame code, or generators?**
 - Because they’re noisy, and tied to structure. **TestD** is readable, and delays schema application until you need it. The inspiration
 here is the Clojure/Lisp-y code-as-data way.
 
-**Q: Who is this for?**  
+**Q: Who is this for?**
 - Anyone tired of rotting `.csv`, `.json`, or `.txt` fixtures in their `resources/` or having to fiddle with all their test objects
 everytime their data models evolve.
 
