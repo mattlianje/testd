@@ -3,19 +3,18 @@
 </p>
 
 # <img src="pix/testd-logo.png" width="60">   testd
-**Pretty, flexible, simple fixtures**
+**Pretty, flexible data**
 
-A lightweight Scala DSL for expressing test fixtures as beautiful, editable, executable, and re-usable code.
+Tabular data as spreadsheet-like, executable, and re-usable code.
 Part of [d4](https://github.com/mattlianje/d4)
 
 ## Features
-- TestD is a tiny algebra for tabular test data
 - Spreadsheet-like data-as-code 🍰
-- Re-usable, composable fixtures
+- Re-usable, composable data fixtures
 - Batteries included Spark integration
 - Works beautifully in REPL
 - Drop **TestD.scala** in like a header file
-- Bring your own interpreter
+- Easily extensible
 
 ## FAQ
 
