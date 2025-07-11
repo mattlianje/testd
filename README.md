@@ -65,12 +65,12 @@ You just need to know 4 things:
 ```scala
 import testd._
 
-val data = TestD(Seq(
+val data = TestD(
   ("order_id", "customer", "items", "total", "priority", "delivered"),  /* Column names */
   ("A101", "Napac", 5, 299.99, "HIGH", true),                           /* Data rows... */
   ("B202", "Air Liquide", 1, 499.50, "LOW", false),
   ("C303", "A long company name", 3, 799.99, "HIGH", true)
-))
+)
 ```
 2. Call `toDf`on a **TestD** to get a Spark DataFrame
 ```scala
@@ -80,12 +80,12 @@ val df = data.toDf(spark)
 ```scala
 println(data)                    
 /*
-TestD(Seq(
+TestD(
      ("ORDER_ID", "CUSTOMER"           , "ITEMS", "TOTAL", "PRIORITY", "DELIVERED"),
      ("A101"    , "Napac"              , 5      , 299.99 , "HIGH"    , true       ),
      ("B202"    , "Air Liqide"         , 1      , 499.50 , "LOW"     , false      ),
      ("C303"    , "A long company name", 3      , 799.99 , "HIGH"    , true       )
-   ))
+   )
 */
 ```
 4. Use the 3 **TestD** schema operations below.
@@ -182,11 +182,11 @@ val df = spark.createDataFrame(Seq(
 val testd = TestD.fromDf(df)
 println(testd)
 /*
-TestD(Seq(
+TestD(
   ("ID"  , "NAME" ),
   ("1"   , "Alice"),
   ("2"   , "Bob"  )
-))
+)
 */
 ```
 
@@ -208,11 +208,11 @@ val data = Seq(
 val testd = TestD.fromMap(data)
 println(testd)
 /*
-TestD(Seq(
+TestD(
   ("ID", "NAME" ),
   ("1",  "Alice"),
   ("2",  null   )
-))
+)
 */
 ```
 Maps are everywhere: logs, JSON, APIs - and **TestD** gives them shape, order, and schema control.
@@ -225,12 +225,12 @@ Start with some sample data:
 ```scala
 import testd._
 
-val orders = TestD(Seq(
+val orders = TestD(
   ("order_id", "customer", "items", "total", "priority"),
   ("A101", "Acme Corp", 5, 299.99, "HIGH"),
   ("B202", "Globex", 1, 499.50, "LOW"),
   ("C303", "Initech", 3, 799.99, "HIGH")
-))
+)
 ```
 
 Add a new column with a default value:
@@ -238,12 +238,12 @@ Add a new column with a default value:
 val withStatus = orders.withColumn("status", "pending")
 println(withStatus)
 /*
-TestD(Seq(
+TestD(
   ("ORDER_ID", "CUSTOMER", "ITEMS", "TOTAL" , "PRIORITY", "STATUS" ),
   ("A101"    , "Acme Corp", 5     , 299.99  , "HIGH"    , "pending"),
   ("B202"    , "Globex"   , 1     , 499.50  , "LOW"     , "pending"),
   ("C303"    , "Initech"  , 3     , 799.99  , "HIGH"    , "pending")
-))
+)
 */
 ```
 
@@ -252,12 +252,12 @@ Or add a column with null values for later population
 val withNotes = orders.withColumn("notes")
 println(withNotes)
 /*
-TestD(Seq(
+TestD(
   ("ORDER_ID", "CUSTOMER", "ITEMS", "TOTAL" , "PRIORITY", "NOTES"),
   ("A101"    , "Acme Corp", 5     , 299.99  , "HIGH"    , null  ),
   ("B202"    , "Globex"   , 1     , 499.50  , "LOW"     , null  ),
   ("C303"    , "Initech"  , 3     , 799.99  , "HIGH"    , null  )
-))
+)
 */
 ```
 
@@ -266,12 +266,12 @@ Select only the columns you need
 val essential = orders.select("order_id", "customer", "total")
 println(essential)
 /*
-TestD(Seq(
+TestD(
   ("ORDER_ID", "CUSTOMER", "TOTAL" ),
   ("A101"    , "Acme Corp", 299.99 ),
   ("B202"    , "Globex"   , 499.50 ),
   ("C303"    , "Initech"  , 799.99 )
-))
+)
 */
 ```
 
@@ -280,12 +280,12 @@ Drop columns you don't want
 val simplified = orders.drop("priority")
 println(simplified)
 /*
-TestD(Seq(
+TestD(
   ("ORDER_ID", "CUSTOMER", "ITEMS", "TOTAL" ),
   ("A101"    , "Acme Corp", 5     , 299.99  ),
   ("B202"    , "Globex"   , 1     , 499.50  ),
   ("C303"    , "Initech"  , 3     , 799.99  )
-))
+)
 */
 ```
 
@@ -303,7 +303,7 @@ val studentSchema = StructType(Seq(
  )))
 ))
 
-val data = TestD(Seq(
+val data = TestD(
  ("id", "student"),
  (1, """{
    "name": "Alice", 
@@ -315,7 +315,7 @@ val data = TestD(Seq(
    "grades": [82, 85, 88], 
    "subjects": ["math", "history"]  
  }""")
-))
+)
 
 val df = TestD.conformToSchema(data.toDf(spark), studentSchema)
 ```
@@ -335,7 +335,7 @@ val productData = TestD(("product", "category", "price", "available") +: product
 println(productData)
 
 /*
-TestD(Seq(
+TestD(
   ("PRODUCT"     , "CATEGORY"   , "PRICE", "AVAILABLE"),
   ("Electronics1", "Electronics", 10.99  , false      ),
   ("Electronics2", "Electronics", 21.98  , true       ),
@@ -346,7 +346,7 @@ TestD(Seq(
   ("Games1"      , "Games"      , 10.99  , false      ),
   ("Games2"      , "Games"      , 21.98  , true       ),
   ("Games3"      , "Games"      , 32.97  , false      )
-))
+)
 */
 ```
 
@@ -360,10 +360,10 @@ val messyData = spark.createDataFrame(Seq(
 ```
 - ✨🍰 Pretty **TestD** data
 ```scala
-TestD(Seq(
+TestD(
   ("ID"    , "NAME"                          , "SALARY" , "START_DATE", "DEPARTMENT", "ACTIVE"),
   ("A12345", "Louis XI the Universal Spider" , 8500.00  , null        , "Marketing" , true    ),
   ("B78901", "Bob Wilson"                    , 12500.00 , "2023-03-01", "Sales"     , false   ),
   (null    , "John Doe"                      , 10000.50 , "2023-01-01", "Sales"     , true    )
-))
+)
 ```
