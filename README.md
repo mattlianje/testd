@@ -10,11 +10,13 @@ Part of [d4](https://github.com/mattlianje/d4)
 
 ## Features
 - Spreadsheet-like data-as-code 🍰
-- Re-usable, composable data fixtures
-- Batteries included Spark integration
+- Reusable, composable test fixtures
 - Works beautifully in REPL
 - Drop **TestD.scala** in like a header file
-- Easily extensible w/ your own algebras
+- Easily extensible with your own algebras
+- ✅ Batteries included Spark support (see Spark Integration)
+
+
 
 ## FAQ
 
@@ -39,14 +41,17 @@ everytime their data models evolve.
 - [Features](#features)
 - [FAQ](#faq)
 - [Get Started](#get-started)
-- [Schema Operations](#schema-operations)
+- [Basic API](#basic-api)
+  -[toMap](#toMap)
+- [Column Operations](#column-operations)
+- [Composing Data](#composing-data)
+- [Spark Integration](#spark-integration)
   - [castToSchema](#casttochema)
   - [conformToSchema](#conformtoschema)
   - [filterToSchema](#filtertochema)
   - [fromDf](#fromdf)
-- [toMap](#tomap)
-- [Column Operations](#column-operations)
-- [Creating nested data](#creating-nested-data)
+  - [toDf](#toDf)
+  - [Nested Data](#nested-data)
 - [More examples](#more-examples)
 
 
@@ -59,8 +64,10 @@ Load the latest `master` in your spark-shell:
 spark-shell -i <(curl -sL https://raw.githubusercontent.com/mattlianje/testd/master/TestD.scala)
 ```
 
+## Basic API
 You just need to know 4 things:
-1. The first row of a **TestD** is for column names
+
+1. Declare tabular data (1st row is for column names!):
 ```scala
 import testd._
 
@@ -71,11 +78,8 @@ val data = TestD(
   ("C303", "A long company name", 3, 799.99, "HIGH", true)
 )
 ```
-2. Call `toDf`on a **TestD** to get a Spark DataFrame
-```scala
-val df = data.toDf(spark)
-```
-3. Call `println` on a **TestD** to get a ✨🍰 pretty **TestD**
+
+2. Pretty-print (and drop back into your code):
 ```scala
 println(data)                    
 /*
@@ -87,7 +91,104 @@ TestD(
    )
 */
 ```
-4. Use the 3 **TestD** schema operations below.
+
+### `toMap`
+You can create a **TestD** from a Map and vice-versa.
+**Why is this useful?** Because a `Seq[Map[String, Any]]` is structurally isomorphic to a spreadsheet:
+
+3. Convert to a TestD to Map-form:
+```scala
+scala> data.toMap
+res0: String =
+TestD(
+  Map("CUSTOMER" -> "Napac", "DELIVERED" -> true, "ITEMS" -> 5, "ORDER_ID" -> "A101", "PRIORITY" -> "HIGH", "TOTAL" -> 299.99),
+  Map("CUSTOMER" -> "Air Liquide", "DELIVERED" -> false, "ITEMS" -> 1, "ORDER_ID" -> "B202", "PRIORITY" -> "LOW", "TOTAL" -> 499.5),
+  Map("CUSTOMER" -> "A long company name", "DELIVERED" -> true, "ITEMS" -> 3, "ORDER_ID" -> "C303", "PRIORITY" -> "HIGH", "TOTAL" -> 799.99)
+)
+```
+
+4. Construct from Map(s):
+```scala
+val data2 = TestD(
+  Map("CUSTOMER" -> "Napac", "DELIVERED" -> true, "ITEMS" -> 5, "ORDER_ID" -> "A101", "PRIORITY" -> "HIGH", "TOTAL" -> 299.99),
+  Map("CUSTOMER" -> "Air Liquide", "DELIVERED" -> false, "ITEMS" -> 1, "ORDER_ID" -> "B202", "PRIORITY" -> "LOW", "TOTAL" -> 499.5),
+  Map("CUSTOMER" -> "A long company name", "DELIVERED" -> true, "ITEMS" -> 3, "ORDER_ID" -> "C303", "PRIORITY" -> "HIGH", "TOTAL" -> 799.99)
+)
+/*
+TestD(
+  ("ORDER_ID", "CUSTOMER"           , "ITEMS", "TOTAL", "PRIORITY", "DELIVERED"),
+  ("A101"    , "Napac"              , 5      , 299.99 , "HIGH"    , true       ),
+  ("B202"    , "Air Liquide"        , 1      , 499.5  , "LOW"     , false      ),
+  ("C303"    , "A long company name", 3      , 799.99 , "HIGH"    , true       )
+)
+*/
+```
+Maps are everywhere: logs, JSON, APIs - and **TestD** gives them shape, order, and schema control.
+
+## Column Operations
+You can manipulate a TestD like a mini dataframe:
+
+- Add column
+```scala
+data.withColumn("status", "pending")
+```
+```scala
+scala> data.withColumn("status", "pending")
+res1: testd.TestD[Map[String,Any]] =
+TestD(
+  ("CUSTOMER"           , "DELIVERED", "ITEMS", "ORDER_ID", "PRIORITY", "STATUS" , "TOTAL"),
+  ("Napac"              , true       , 5      , "A101"    , "HIGH"    , "pending", 299.99 ),
+  ("Air Liquide"        , false      , 1      , "B202"    , "LOW"     , "pending", 499.5  ),
+  ("A long company name", true       , 3      , "C303"    , "HIGH"    , "pending", 799.99 )
+)
+```
+
+- Add nullable column
+```scala
+orders.withColumn("notes")
+```
+```scala
+scala> data.withColumn("notes")
+res2: testd.TestD[Map[String,Any]] =
+TestD(
+  ("CUSTOMER"           , "DELIVERED", "ITEMS", "NOTES", "ORDER_ID", "PRIORITY", "TOTAL"),
+  ("Napac"              , true       , 5      , null   , "A101"    , "HIGH"    , 299.99 ),
+  ("Air Liquide"        , false      , 1      , null   , "B202"    , "LOW"     , 499.5  ),
+  ("A long company name", true       , 3      , null   , "C303"    , "HIGH"    , 799.99 )
+)
+```
+
+- Select columns
+```scala
+data.select("order_id", "total")
+```
+```scala
+scala> data.select("order_id", "total")
+res3: testd.TestD[Map[String,Any]] =
+TestD(
+  ("ORDER_ID", "TOTAL"),
+  ("A101"    , 299.99 ),
+  ("B202"    , 499.5  ),
+  ("C303"    , 799.99 )
+)
+```
+
+- Drop columns
+```scala
+data.drop("priority")
+```
+```scala
+scala> data.drop("priority")
+res4: testd.TestD[Map[String,Any]] =
+TestD(
+  ("CUSTOMER"           , "DELIVERED", "ITEMS", "ORDER_ID", "TOTAL"),
+  ("Napac"              , true       , 5      , "A101"    , 299.99 ),
+  ("Air Liquide"        , false      , 1      , "B202"    , 499.5  ),
+  ("A long company name", true       , 3      , "C303"    , 799.99 )
+)
+```
+
+## TestD Composition
 
 
 ## Schema Operations
@@ -188,34 +289,6 @@ TestD(
 )
 */
 ```
-
-## `toMap` 
-You can create a **TestD** from a Map and vice-versa.
-
-**Why is this useful?** Because a `Seq[Map[String, Any]]` is structurally isomorphic to a spreadsheet:
-
-- Each Map = one row
-- Keys = column names
-- Missing keys? --> nulls (just like Excel)
-
-```scala
-val data = Seq(
-  Map("id" -> 1, "name" -> "Alice"),
-  Map("id" -> 2) /* no name */
-)
-
-val testd = TestD.fromMap(data)
-println(testd)
-/*
-TestD(
-  ("ID", "NAME" ),
-  ("1",  "Alice"),
-  ("2",  null   )
-)
-*/
-```
-Maps are everywhere: logs, JSON, APIs - and **TestD** gives them shape, order, and schema control.
-
 
 ## Column Operations
 **TestD** makes it dead simple to manipulate your test data, just like you would with a Spark DataFrame
