@@ -14,17 +14,17 @@ Part of [d4](https://github.com/mattlianje/d4)
 - Works beautifully in REPL
 - Drop **TestD.scala** in like a header file
 - Easily extensible with your own algebras
-- ✅ Batteries included Spark support (see Spark Integration)
-
+- Batteries included Spark support (see Spark Integration)
 
 
 ## FAQ
 
 **Q: Why TestD?**
-- Because test data is critical - and painful to maintain in brittle case classes, external JSON, or scattered files.
+- Because test data is critical - and painful to maintain in brittle case classes, or junk files outside your code.
 
 **Q: Sure, but why?**
-- You define clean tabular data once, and reuse/compose it across systems. Spark is one target - plug in your own algebras and extension methods.
+- Because **TestD** lets you define tabular data once, then reuse & compose it across systems. (Spark is just one target),
+plug in your own algebras and extension methods.
 
 **Q: Why a spreadsheet format?**
 - Because it’s visual, writable by humans, easy to diff and battle-tested for centuries (even if derided in some CS circles).
@@ -34,7 +34,7 @@ Part of [d4](https://github.com/mattlianje/d4)
 here is the Clojure/Lisp-y code-as-data way.
 
 **Q: Who is this for?**
-- Anyone tired of rotting `.csv`, `.json`, or `.txt` fixtures in their `resources/` or having to fiddle with all their test objects
+- Programmers tired of rotting `.csv`, `.json`, or `.txt` fixtures in their `resources/` or having to unbreak their test objects
 everytime their data models evolve.
 
 ## Table of Contents
