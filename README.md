@@ -14,7 +14,7 @@ Part of [d4](https://github.com/mattlianje/d4)
 - Batteries included Spark integration
 - Works beautifully in REPL
 - Drop **TestD.scala** in like a header file
-- Easily extensible
+- Easily extensible w/ your own algebras
 
 ## FAQ
 
