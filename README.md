@@ -42,7 +42,7 @@ everytime their data models evolve.
 - [FAQ](#faq)
 - [Get Started](#get-started)
 - [Basic API](#basic-api)
-  -[toMap](#toMap)
+  - [toMap](#toMap)
 - [Column Operations](#column-operations)
 - [Composing Data](#composing-data)
 - [Spark Integration](#spark-integration)
