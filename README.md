@@ -192,7 +192,7 @@ TestD(
 ## `toMap` 
 You can create a **TestD** from a Map and vice-versa.
 
-**Why is this so useful?** Because a Seq[Map[String, Any]] is structurally isomorphic to a spreadsheet:
+**Why is this useful?** Because a `Seq[Map[String, Any]]` is structurally isomorphic to a spreadsheet:
 
 - Each Map = one row
 - Keys = column names
