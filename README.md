@@ -3,7 +3,7 @@
 </p>
 
 # <img src="pix/testd-logo.png" width="60">   testd
-**Simple, powerful data-as-code**
+**Pretty, spreadsheet-like data-as-code**
 
 Tabular data fixtures as simple, spreadsheet-like, executable code.
 Part of [d4](https://github.com/mattlianje/d4)
