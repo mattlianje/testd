@@ -275,6 +275,7 @@ val filtered = TestD.filterToSchema(df, schema)
 
 ```scala
 import testd._
+import org.apache.spark.sql.types._
 
 /* You have the REPRESENTATION of some test data */
 val complexData = TestD(
