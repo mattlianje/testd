@@ -276,7 +276,7 @@ val filtered = TestD.filterToSchema(df, schema)
 ```scala
 import testd._
 
-/* You have the REPRESENTATION of some test data
+/* You have the REPRESENTATION of some test data */
 val complexData = TestD(
   ("id", "profile", "scores"),
   (1, """{"name": "Alice", "meta": {"joined": "2023"}}""", "[95, 87, 92]")
