@@ -85,6 +85,7 @@ TestD(
 ```
 
 ## Basic API
+A TestD is just a case class that wraps some a `Seq` of `Map[String, Any]`
 ### TestD
 TestD supports multiple construction patterns:
 
@@ -129,6 +130,9 @@ Maps are everywhere: logs, JSON, APIs - and **TestD** gives them shape, order, a
 
 ## Editing
 You can edit **TestD**'s like mini dataframes
+
+This lets you quickly re-jig them in your REPL or stack modifications on top of base **TestD**'s
+
 ### `.withColumn`
 Add columns to existing TestD:
 ```scala
@@ -199,11 +203,15 @@ Check subset relationships:
 val subset = TestD(("name", "age"), ("Alice", 25))
 val superset = TestD(("name", "age"), ("Alice", 25), ("Bob", 30))
 
-superset.contains(subset) // true
-subset.contains(superset) // false
+superset.contains(subset) /* true */
+subset.contains(superset) /* false */
 ```
 
 ## Spark
+**TestD** comes packaged with spark helpers.
+
+This lets your slurp any Spark DataFrame into a beautiful test fixture, and vice-versa convert any **TestD** into a DataFrame.
+
 ### Conversions
 #### `.toDf`
 Convert **TestD** to Spark DataFrame:
@@ -264,23 +272,57 @@ val filtered = TestD.filterToSchema(df, schema)
 
 #### Nested data
 **TestD** handles complex nested structures by converting them to JSON strings:
+
 ```scala
+import testd._
+
+/* You have the REPRESENTATION of some test data
 val complexData = TestD(
-  ("id", "data"),
-  (1, """{"user": {"name": "Alice", "prefs": [1,2,3]}}""")
+  ("id", "profile", "scores"),
+  (1, """{"name": "Alice", "meta": {"joined": "2023"}}""", "[95, 87, 92]")
 )
 
-// Pretty printing with triple quotes for JSON
-println(complexData)
-// TestD(
-//   ("ID"  , "DATA"                                      ),
-//   (1     , """{"user": {"name": "Alice", "prefs": [1,2,3]}}""")
-// )
+/* You have your nice types */
+val nestedSchema = StructType(Seq(
+  StructField("ID", IntegerType),
+  StructField("PROFILE", StructType(Seq(
+    StructField("name", StringType),
+    StructField("meta", StructType(Seq(
+      StructField("joined", StringType)
+    )))
+  ))),
+  StructField("SCORES", ArrayType(IntegerType))
+))
 
-// Round-trip through DataFrame preserves structure
+/* Transforms you TestD into a DataFrame with nice types */
 val df = complexData.toDf(spark)
-val backToTestD = TestD.fromDf(df)
+val typedDf = TestD.castToSchema(df, nestedSchema)
+
+/* Verify the schema works */
+typedDf.select("PROFILE.name", "SCORES").show()
 ```
+You will see:
+```scala
+ +-----+------------+
+ | name|      SCORES|
+ +-----+------------+
+ |Alice|[95, 87, 92]|
+ +-----+------------+
+```
+
+Then you can yank your spark df back into a TestD fixture
+```scala
+val backToTestD = TestD.fromDf(typedDf)
+println(backToTestD)
+```
+You will see:
+```scala
+TestD(
+  ("ID", "PROFILE"                                      , "SCORES"        ),
+  ("1" , """{"name":"Alice","meta":{"joined":"2023"}}""", """[95,87,92]""")
+)
+```
+
 
 ## More examples
 - Generate nested data and avoid boilerplate with Scala collections
@@ -309,22 +351,4 @@ TestD(
   ("Games3"      , "Games"      , 32.97  , false      )
 )
 */
-```
-
-- Typical messy data - hard to read, inconsistent formatting:
-```scala
-val messyData = spark.createDataFrame(Seq(
-  (null, "JOHN.DOE", "10,000.50", "20230101", "SALES", "YES"),
-  ("A12345", "Louis XI the Universal Spider", "8,500.00", null, "MARKETING", "1"),
-  ("B78901", "Bob Wilson Jr", "12500", "2023/03", "sales", "NO")
-)).toDF("ID", "name", "SALARY", "START_DT", "Department", "ACTIVE")
-```
-- ✨🍰 Pretty **TestD** data
-```scala
-TestD(
-  ("ID"    , "NAME"                          , "SALARY" , "START_DATE", "DEPARTMENT", "ACTIVE"),
-  ("A12345", "Louis XI the Universal Spider" , 8500.00  , null        , "Marketing" , true    ),
-  ("B78901", "Bob Wilson"                    , 12500.00 , "2023-03-01", "Sales"     , false   ),
-  (null    , "John Doe"                      , 10000.50 , "2023-01-01", "Sales"     , true    )
-)
 ```
