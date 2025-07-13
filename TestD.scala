@@ -1,14 +1,10 @@
 /*
  * +==========================================================================+
  * |                                 testd                                    |
- * |           Tabular test data with precise formatting control              |
- * |                 Compatible with Spark 3.x and Scala 2.x                  |
+ * |                      Pretty, tabular test data                           |
  * |                                                                          |
  * | Copyright 2025 Matthieu Court (matthieu.court@protonmail.com)            |
  * | Apache License 2.0                                                       |
- * |                                                                          |
- * | Drop-in case class for creating aligned tabular test data with support   |
- * | for nested JSON, DataFrame round-trips, and schema operations            |
  * +==========================================================================+
  */
 package testd
@@ -71,6 +67,15 @@ case class TestD[T](data: Seq[T]) {
     data.map(toSeq)
   } else {
     data.tail.map(toSeq)
+  }
+
+  def asMaps: Seq[Map[String, Any]] = {
+    if (data.head.isInstanceOf[Map[_, _]]) {
+      data.map(_.asInstanceOf[Map[String, Any]])
+    } else {
+      val columnNames = headers.map(_.toString)
+      rows.map(row => columnNames.zip(row).toMap)
+    }
   }
 
   /** Generate map-style output with proper JSON escaping. Detects JSON strings

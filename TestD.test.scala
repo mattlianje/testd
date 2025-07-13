@@ -225,6 +225,23 @@ class TestDTest extends munit.FunSuite {
     assert(testd.toString.contains("\"subject\":\"Math\""))
   }
 
+  test("asMaps functionality") {
+    val tupleTestd = TestD(("name", "age"), ("Alice", 25), ("Bob", 30))
+    val expected = Seq(
+      Map("NAME" -> "Alice", "AGE" -> 25),
+      Map("NAME" -> "Bob", "AGE" -> 30)
+    )
+    assertEquals(tupleTestd.asMaps, expected)
+
+    val mapTestd = TestD(
+      Seq(
+        Map("name" -> "Bob", "age" -> 30),
+        Map("name" -> "Charlie", "age" -> 35)
+      )
+    )
+    assertEquals(mapTestd.asMaps, mapTestd.data)
+  }
+
   test("edge cases") {
     /* Nulls */
     val nullTestd = TestD(Seq(Map("col1" -> "a", "col2" -> null)))
