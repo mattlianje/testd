@@ -3,50 +3,58 @@
 </p>
 
 # <img src="pix/testd-logo.png" width="60">   testd
-**Pretty, flexible, simple fixtures**
+**Pretty, flexible data-as-code**
 
-A lightweight Scala DSL for expressing test fixtures as beautiful, editable, executable, and re-usable code.
+Tabular data fixtures as simple, spreadsheet-like, executable code.
 Part of [d4](https://github.com/mattlianje/d4)
 
 ## Features
-- TestD is a tiny algebra for tabular test data
 - Spreadsheet-like data-as-code 🍰
-- Re-usable, composable fixtures
-- Batteries included Spark integration
+- Reusable, composable test fixtures
 - Works beautifully in REPL
 - Drop **TestD.scala** in like a header file
-- Bring your own interpreter
+- Easily extensible with your own algebras
+- Batteries included Spark support (see Spark Integration)
+
 
 ## FAQ
 
-**Q: Why does this exist?**  
-Because test data is critical - and painful to maintain in brittle case classes, external JSON, or scattered files.
+**Q: Why TestD?**
+- Because test data is critical - and painful to maintain in brittle case classes, or junk files outside your code.
 
-**Q: Sure, but why?**  
-**TestD** is just an algebra. You define clean tabular data once and reuse it across systems. Spark is one target - not the core.
+**Q: Sure, but why?**
+- Because **TestD** lets you define tabular data once, then reuse & compose it across systems. (Spark is just one target),
+plug in your own algebras and extension methods.
 
-**Q: Why a spreadsheet format?**  
-Because it’s visual, writable by humans, easy to diff and battle-tested for centuries (even if derided in some CS circles).
+**Q: Why a spreadsheet format?**
+- Because it’s visual, writable by humans, easy to diff and battle-tested for centuries (even if derided in some CS circles).
 
-**Q: Why not use Scala literals, DataFrame code, or generators?**  
-Because they’re noisy, and tied to structure. **TestD** is readable, and delays schema application until you need it. The inspiration
+**Q: Why not use Scala literals, DataFrame code, or generators?**
+- Because they’re noisy, and tied to structure. **TestD** is readable, and delays schema application until you need it. The inspiration
 here is the Clojure/Lisp-y code-as-data way.
 
-**Q: Who is this for?**  
-Anyone tired of rotting `.csv`, `.json`, or `.txt` fixtures in your `resources/`.
+**Q: Who is this for?**
+- Programmers tired of rotting `.csv`, `.json`, or `.txt` fixtures in their `resources/` or having to unbreak their test objects
+everytime their data models evolve.
 
 ## Table of Contents
 - [Features](#features)
 - [FAQ](#faq)
 - [Get Started](#get-started)
-- [Schema Operations](#schema-operations)
-  - [castToSchema](#casttochema)
-  - [conformToSchema](#conformtoschema)
-  - [filterToSchema](#filtertochema)
-  - [fromDf](#fromdf)
-- [toMap](#tomap)
-- [Column Operations](#column-operations)
-- [Creating nested data](#creating-nested-data)
+- [Basic API](#basic-api)
+  - [TestD](#testd)
+  - [toMap](#toMap)
+- [Editing](#editing)
+- [Composition](#composition)
+- [Spark](#spark)
+  - [Conversions](#conversions)
+    - [toDf](#toDf)
+    - [fromDf](#fromdf)
+  - [Casting](#casting)
+    - [castToSchema](#casttochema)
+    - [conformToSchema](#conformtoschema)
+    - [filterToSchema](#filtertochema)
+    - [Nested data](#nested-data)
 - [More examples](#more-examples)
 
 
@@ -59,264 +67,264 @@ Load the latest `master` in your spark-shell:
 spark-shell -i <(curl -sL https://raw.githubusercontent.com/mattlianje/testd/master/TestD.scala)
 ```
 
-You just need to know 4 things:
-1. The first row of a **TestD** is for column names
+All you need is `import testd._` and start creating beautiful data:
 ```scala
 import testd._
 
-val data = TestD(Seq(
-  ("order_id", "customer", "items", "total", "priority", "delivered"),  /* Column names */
-  ("A101", "Napac", 5, 299.99, "HIGH", true),                           /* Data rows... */
-  ("B202", "Air Liquide", 1, 499.50, "LOW", false),
-  ("C303", "A long company name", 3, 799.99, "HIGH", true)
-))
-```
-2. Call `toDf`on a **TestD** to get a Spark DataFrame
-```scala
-val df = data.toDf(spark)
-```
-3. Call `println` on a **TestD** to get a ✨🍰 pretty **TestD**
-```scala
-println(data)                    
-/*
-TestD(Seq(
-     ("ORDER_ID", "CUSTOMER"           , "ITEMS", "TOTAL", "PRIORITY", "DELIVERED"),
-     ("A101"    , "Napac"              , 5      , 299.99 , "HIGH"    , true       ),
-     ("B202"    , "Air Liqide"         , 1      , 499.50 , "LOW"     , false      ),
-     ("C303"    , "A long company name", 3      , 799.99 , "HIGH"    , true       )
-   ))
-*/
-```
-4. Use the 3 **TestD** schema operations below.
-
-
-## Schema Operations
-TestD gives you three tools for aligning messy data to a target schema — depending on how strict or flexible you want to be.
-
-Imagine ...
-- We create a quick and messy DataFrame:
-```scala
-val messyDf = spark.createDataFrame(Seq(
-  ("1", "2023-01-01", "99.9", "true"),
-  ("2", "20230102", "88.8", "1"),
-  ("3", "2023/01/03", "77.7", "FALSE")
-)).toDF("ID", "DATE", "AMOUNT", "ACTIVE")
-```
-
-- But, like often, we have a target schema with nice types:
-```scala
-import org.apache.spark.sql.types._
-
-val schema = StructType(Seq(
-  StructField("id", IntegerType),
-  StructField("date", DateType),
-  StructField("amount", DoubleType),
-  StructField("active", BooleanType),
-  StructField("category", StringType)
-))
-```
-
-#### `castToSchema`
-**Gently cast what's there. Ignore the rest.**
-Casts only the columns that exist in both the DataFrame and the schema. Leaves extra columns untouched.
-```scala
-val castedDf = TestD.castToSchema(messyDf, schema)
-castedDf.show()
-```
-```
-+---+----------+------+-------+
-| ID|      DATE|AMOUNT|ACTIVE |
-+---+----------+------+-------+
-|  1|2023-01-01|  99.9|  true |
-|  2|2023-01-02|  88.8|  true |
-|  3|2023-01-03|  77.7| false |
-+---+----------+------+-------+
-```
-
-#### `conformToSchema`
-**Force it to match exactly.**
-Keeps only schema-defined columns. Adds nulls for missing ones. Drops any extras.
-```scala
-val conformedDf = TestD.conformToSchema(messyDf, schema)
-conformedDf.show()
-```
-```
-+---+----------+------+-------+--------+
-| id|      date|amount|active |category|
-+---+----------+------+-------+--------+
-|  1|2023-01-01|  99.9|  true |    null|
-|  2|2023-01-02|  88.8|  true |    null|
-|  3|2023-01-03|  77.7| false |    null|
-+---+----------+------+-------+--------+
-```
-
-#### `filterToSchema`
-**Keep only what matches.**
-Strips away all columns not present in the schema. No casting - just column selection.
-
-```scala
-val extraDf = messyDf.withColumn("EXTRA", lit("unwanted"))
-val filteredDf = TestD.filterToSchema(extraDf, schema)
-filteredDf.show()
-```
-```
-+---+----------+------+-------+
-| id|      date|amount|active |
-+---+----------+------+-------+
-|  1|2023-01-01|  99.9|  true |
-|  2|2023-01-02|  88.8|  true |
-|  3|2023-01-03|  77.7| false |
-+---+----------+------+-------+
-```
-
-#### `fromDf`
-   
-Convert a Spark DataFrame back to **TestD**:
-```scala
-val df = spark.createDataFrame(Seq(
-  (1, "Alice"), 
-  (2, "Bob")
-)).toDF("id", "name")
-
-val testd = TestD.fromDf(df)
-println(testd)
-/*
-TestD(Seq(
-  ("ID"  , "NAME" ),
-  ("1"   , "Alice"),
-  ("2"   , "Bob"  )
-))
-*/
-```
-
-## `toMap` 
-You can create a **TestD** from a Map and vice-versa.
-
-**Why is this so useful?** Because a Seq[Map[String, Any]] is structurally isomorphic to a spreadsheet:
-
-- Each Map = one row
-- Keys = column names
-- Missing keys? --> nulls (just like Excel)
-
-```scala
-val data = Seq(
-  Map("id" -> 1, "name" -> "Alice"),
-  Map("id" -> 2) /* no name */
+scala> val people = TestD(
+     |   ("name", "age", "city"),
+     |   ("Alice", 25, "New York"),
+     |   ("Bob", 30, "London")
+     | )
+people: testd.TestD[(String, Any, String)] =
+TestD(
+  ("NAME" , "AGE", "CITY"    ),
+  ("Alice", 25   , "New York"),
+  ("Bob"  , 30   , "London"  )
 )
-
-val testd = TestD.fromMap(data)
-println(testd)
-/*
-TestD(Seq(
-  ("ID", "NAME" ),
-  ("1",  "Alice"),
-  ("2",  null   )
-))
-*/
 ```
+
+## Basic API
+A TestD is just a case class that wraps some a `Seq` of `Map[String, Any]`
+### TestD
+TestD supports multiple construction patterns:
+
+**From tuples (first row = headers):**
+```scala
+val data = TestD(
+  ("id", "score", "grade"),
+  (1, 95, "A"),
+  (2, 87, "B")
+)
+```
+
+**From sequences:**
+```scala
+val data = TestD(
+  Seq("id", "score", "grade"),
+  Seq(1, 95, "A"),
+  Seq(2, 87, "B")
+)
+```
+
+**From Maps (no separate headers):**
+
+You can create a **TestD** from a Map and vice-versa.
+**Why is this useful?** Because a `Seq[Map[String, Any]]` is structurally isomorphic to a spreadsheet:
+```scala
+val data = TestD(
+  Map("id" -> 1, "score" -> 95, "grade" -> "A"),
+  Map("id" -> 2, "score" -> 87, "grade" -> "B")
+)
+```
+
+**`.asMaps`**
+Get consistent Map representation regardless of construction method:
+```scala
+val tupleData = TestD(("name", "age"), ("Alice", 25))
+val maps: Seq[Map[String, Any]] = tupleData.asMaps
+// Seq(Map("NAME" -> "Alice", "AGE" -> 25))
+```
+
 Maps are everywhere: logs, JSON, APIs - and **TestD** gives them shape, order, and schema control.
 
+## Editing
+You can edit **TestD**'s like mini dataframes
 
-## Column Operations
-**TestD** makes it dead simple to manipulate your test data, just like you would with a Spark DataFrame
+This lets you quickly re-jig them in your REPL or stack modifications on top of base **TestD**'s
 
-Start with some sample data:
+### `.withColumn`
+Add columns to existing TestD:
 ```scala
-import testd._
+val people = TestD(("name", "age"), ("Alice", 25))
 
-val orders = TestD(Seq(
-  ("order_id", "customer", "items", "total", "priority"),
-  ("A101", "Acme Corp", 5, 299.99, "HIGH"),
-  ("B202", "Globex", 1, 499.50, "LOW"),
-  ("C303", "Initech", 3, 799.99, "HIGH")
-))
+// Add column with default value
+val withCountry = people.withColumn("country", "USA")
+
+// Add column with null
+val withPhone = people.withColumn("phone")
 ```
 
-Add a new column with a default value:
+### `.select`
+Choose specific columns:
 ```scala
-val withStatus = orders.withColumn("status", "pending")
-println(withStatus)
-/*
-TestD(Seq(
-  ("ORDER_ID", "CUSTOMER", "ITEMS", "TOTAL" , "PRIORITY", "STATUS" ),
-  ("A101"    , "Acme Corp", 5     , 299.99  , "HIGH"    , "pending"),
-  ("B202"    , "Globex"   , 1     , 499.50  , "LOW"     , "pending"),
-  ("C303"    , "Initech"  , 3     , 799.99  , "HIGH"    , "pending")
-))
-*/
+val data = TestD(
+  ("name", "age", "city", "country"),
+  ("Alice", 25, "NYC", "USA")
+)
+
+val subset = data.select("name", "age")
+// Only NAME and AGE columns
 ```
 
-Or add a column with null values for later population
+### `.drop`
+Remove unwanted columns:
 ```scala
-val withNotes = orders.withColumn("notes")
-println(withNotes)
-/*
-TestD(Seq(
-  ("ORDER_ID", "CUSTOMER", "ITEMS", "TOTAL" , "PRIORITY", "NOTES"),
-  ("A101"    , "Acme Corp", 5     , 299.99  , "HIGH"    , null  ),
-  ("B202"    , "Globex"   , 1     , 499.50  , "LOW"     , null  ),
-  ("C303"    , "Initech"  , 3     , 799.99  , "HIGH"    , null  )
-))
-*/
+val cleaned = data.drop("country", "city")
+// Everything except COUNTRY and CITY
 ```
 
-Select only the columns you need
+## Composition
+You can also compose **TestD**'s
+
+You can also compose TestD's. These operations work on a row-by-row basis, comparing all column values to determine matches.
+
+### `.union`
+Combine **TestD** instances:
 ```scala
-val essential = orders.select("order_id", "customer", "total")
-println(essential)
-/*
-TestD(Seq(
-  ("ORDER_ID", "CUSTOMER", "TOTAL" ),
-  ("A101"    , "Acme Corp", 299.99 ),
-  ("B202"    , "Globex"   , 499.50 ),
-  ("C303"    , "Initech"  , 799.99 )
-))
-*/
+val team1 = TestD(("name", "role"), ("Alice", "Dev"))
+val team2 = TestD(("name", "role"), ("Bob", "PM"))
+
+val allTeam = team1.union(team2)
+// Contains all rows from both teams
 ```
 
-Drop columns you don't want
+### `.intersect`
+Find common rows:
 ```scala
-val simplified = orders.drop("priority")
-println(simplified)
-/*
-TestD(Seq(
-  ("ORDER_ID", "CUSTOMER", "ITEMS", "TOTAL" ),
-  ("A101"    , "Acme Corp", 5     , 299.99  ),
-  ("B202"    , "Globex"   , 1     , 499.50  ),
-  ("C303"    , "Initech"  , 3     , 799.99  )
-))
-*/
+val currentUsers = TestD(("id", "name"), (1, "Alice"))
+val activeUsers = TestD(("id", "name"), (1, "Alice"), (2, "Bob"))
+
+val overlap = currentUsers.intersect(activeUsers)
+// Rows that exist in both
 ```
 
-## Creating nested data
+### `.except`
+Set difference:
+```scala
+val allUsers = TestD(("id", "name"), (1, "Alice"), (2, "Bob"))
+val inactiveUsers = TestD(("id", "name"), (2, "Bob"))
+
+val activeOnly = allUsers.except(inactiveUsers)
+// Rows in allUsers but not in inactiveUsers
+```
+
+### `.contains`
+Check subset relationships:
+```scala
+val subset = TestD(("name", "age"), ("Alice", 25))
+val superset = TestD(("name", "age"), ("Alice", 25), ("Bob", 30))
+
+superset.contains(subset) /* true */
+subset.contains(superset) /* false */
+```
+
+## Spark
+**TestD** comes packaged with spark helpers.
+
+### Conversions
+This lets your slurp any Spark DataFrame into a beautiful test fixture, and vice-versa convert any **TestD** into a DataFrame.
+
+#### `.toDf`
+Convert **TestD** to Spark DataFrame:
+```scala
+val testd = TestD(("name", "age"), ("Alice", 25))
+val df = testd.toDf(spark)
+// DataFrame with StringType columns
+```
+
+#### `.fromDf`
+Create **TestD** from DataFrame (preserves complex types as JSON):
+```scala
+val df = spark.createDataFrame(...)
+val testd = TestD.fromDf(df)
+// Complex nested structures become JSON strings
+```
+
+### Casting
+These 3 methods make it trivial to cast your **TestD** into any DataFrame with pretty types.
+#### `.castToSchema`
+Cast DataFrame columns to match schema types:
+```scala
+val df = testd.toDf(spark) // All StringType
+val schema = StructType(Seq(
+  StructField("NAME", StringType),
+  StructField("AGE", IntegerType)
+))
+
+val typed = TestD.castToSchema(df, schema)
+// AGE column now IntegerType
+```
+
+#### `.conformToSchema`
+Ensure DataFrame matches schema exactly (adds missing columns as nulls):
+```scala
+val df = spark.createDataFrame(Seq(("Alice",))).toDF("name")
+val schema = StructType(Seq(
+  StructField("name", StringType),
+  StructField("age", IntegerType)
+))
+
+val conformed = TestD.conformToSchema(df, schema)
+// Now has both name and age columns
+```
+
+#### `.filterToSchema`
+Keep only columns that exist in target schema:
+```scala
+val df = spark.createDataFrame(Seq(("Alice", 25, "extra")))
+  .toDF("name", "age", "unwanted")
+val schema = StructType(Seq(
+  StructField("name", StringType),
+  StructField("age", IntegerType)
+))
+
+val filtered = TestD.filterToSchema(df, schema)
+// "unwanted" column removed, types cast to schema
+```
+
+#### Nested data
+**TestD** handles complex nested structures by converting them to JSON strings:
+
 ```scala
 import testd._
 import org.apache.spark.sql.types._
 
-val studentSchema = StructType(Seq(
- StructField("id", IntegerType),
- StructField("student", StructType(Seq(
-   StructField("name", StringType),
-   StructField("grades", ArrayType(IntegerType)),
-   StructField("subjects", ArrayType(StringType))
- )))
+/* You have the REPRESENTATION of some test data */
+val complexData = TestD(
+  ("id", "profile", "scores"),
+  (1, """{"name": "Alice", "meta": {"joined": "2023"}}""", "[95, 87, 92]")
+)
+
+/* You have your nice types */
+val nestedSchema = StructType(Seq(
+  StructField("ID", IntegerType),
+  StructField("PROFILE", StructType(Seq(
+    StructField("name", StringType),
+    StructField("meta", StructType(Seq(
+      StructField("joined", StringType)
+    )))
+  ))),
+  StructField("SCORES", ArrayType(IntegerType))
 ))
 
-val data = TestD(Seq(
- ("id", "student"),
- (1, """{
-   "name": "Alice", 
-   "grades": [95, 87, 92],
-   "subjects": ["math", "english"]
- }"""),
- (2, """{
-   "name": "Bob",
-   "grades": [82, 85, 88], 
-   "subjects": ["math", "history"]  
- }""")
-))
+/* Transforms you TestD into a DataFrame with nice types */
+val df = complexData.toDf(spark)
+val typedDf = TestD.castToSchema(df, nestedSchema)
 
-val df = TestD.conformToSchema(data.toDf(spark), studentSchema)
+/* Verify the schema works */
+typedDf.select("PROFILE.name", "SCORES").show()
+```
+You will see:
+```
+ +-----+------------+
+ | name|      SCORES|
+ +-----+------------+
+ |Alice|[95, 87, 92]|
+ +-----+------------+
+```
+
+Then you can yank your spark df back into a TestD fixture
+```scala
+val backToTestD = TestD.fromDf(typedDf)
+println(backToTestD)
+```
+You will see:
+```scala
+TestD(
+  ("ID", "PROFILE"                                      , "SCORES"        ),
+  ("1" , """{"name":"Alice","meta":{"joined":"2023"}}""", """[95,87,92]""")
+)
 ```
 
 
@@ -334,7 +342,7 @@ val productData = TestD(("product", "category", "price", "available") +: product
 println(productData)
 
 /*
-TestD(Seq(
+TestD(
   ("PRODUCT"     , "CATEGORY"   , "PRICE", "AVAILABLE"),
   ("Electronics1", "Electronics", 10.99  , false      ),
   ("Electronics2", "Electronics", 21.98  , true       ),
@@ -345,24 +353,6 @@ TestD(Seq(
   ("Games1"      , "Games"      , 10.99  , false      ),
   ("Games2"      , "Games"      , 21.98  , true       ),
   ("Games3"      , "Games"      , 32.97  , false      )
-))
+)
 */
-```
-
-- Typical messy data - hard to read, inconsistent formatting:
-```scala
-val messyData = spark.createDataFrame(Seq(
-  (null, "JOHN.DOE", "10,000.50", "20230101", "SALES", "YES"),
-  ("A12345", "Louis XI the Universal Spider", "8,500.00", null, "MARKETING", "1"),
-  ("B78901", "Bob Wilson Jr", "12500", "2023/03", "sales", "NO")
-)).toDF("ID", "name", "SALARY", "START_DT", "Department", "ACTIVE")
-```
-- ✨🍰 Pretty **TestD** data
-```scala
-TestD(Seq(
-  ("ID"    , "NAME"                          , "SALARY" , "START_DATE", "DEPARTMENT", "ACTIVE"),
-  ("A12345", "Louis XI the Universal Spider" , 8500.00  , null        , "Marketing" , true    ),
-  ("B78901", "Bob Wilson"                    , 12500.00 , "2023-03-01", "Sales"     , false   ),
-  (null    , "John Doe"                      , 10000.50 , "2023-01-01", "Sales"     , true    )
-))
 ```
