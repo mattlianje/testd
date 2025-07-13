@@ -167,6 +167,8 @@ val cleaned = data.drop("country", "city")
 ## Composition
 You can also compose **TestD**'s
 
+You can also compose TestD's. These operations work on a row-by-row basis, comparing all column values to determine matches.
+
 ### `.union`
 Combine **TestD** instances:
 ```scala
@@ -210,9 +212,9 @@ subset.contains(superset) /* false */
 ## Spark
 **TestD** comes packaged with spark helpers.
 
+### Conversions
 This lets your slurp any Spark DataFrame into a beautiful test fixture, and vice-versa convert any **TestD** into a DataFrame.
 
-### Conversions
 #### `.toDf`
 Convert **TestD** to Spark DataFrame:
 ```scala
@@ -230,6 +232,7 @@ val testd = TestD.fromDf(df)
 ```
 
 ### Casting
+These 3 methods make it trivial to cast your **TestD** into any DataFrame with pretty types.
 #### `.castToSchema`
 Cast DataFrame columns to match schema types:
 ```scala
@@ -303,7 +306,7 @@ val typedDf = TestD.castToSchema(df, nestedSchema)
 typedDf.select("PROFILE.name", "SCORES").show()
 ```
 You will see:
-```scala
+```
  +-----+------------+
  | name|      SCORES|
  +-----+------------+
