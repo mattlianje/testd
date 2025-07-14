@@ -213,7 +213,9 @@ subset.contains(superset) /* false */
 **TestD** comes packaged with spark helpers.
 
 ### Conversions
-This lets your slurp any Spark DataFrame into a beautiful test fixture, and vice-versa convert any **TestD** into a DataFrame.
+This lets your slurp any Spark DataFrame into a **TestD** ...
+
+and vice-versa convert any **TestD** into a DataFrame.
 
 #### `.toDf`
 Convert **TestD** to Spark DataFrame:
