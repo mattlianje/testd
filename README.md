@@ -167,7 +167,7 @@ val cleaned = data.drop("country", "city")
 ## Composition
 You can also compose **TestD**'s
 
-You can also compose TestD's. These operations work on a row-by-row basis, comparing all column values to determine matches.
+These composition functions work on a row-by-row basis, comparing all column values to determine matches.
 
 ### `.union`
 Combine **TestD** instances:
