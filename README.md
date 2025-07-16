@@ -1,3 +1,13 @@
+<!--
+<div align="right">
+  <a href="https://yourcompany.com">
+    <img src="pix/sponsor-logo.png" width="100">
+  </a>
+  <br>
+  <sub><i>Sponsored by YourCompany</i></sub>
+</div>
+-->
+
 <p align="center">
   <img src="pix/testd.png" width="700">
 </p>
@@ -19,21 +29,21 @@ Part of [d4](https://github.com/mattlianje/d4)
 
 ## FAQ
 
-**Q: Why TestD?**
+**Why TestD?**
 - Because test data is critical - and painful to maintain in brittle case classes, or junk files outside your code.
 
-**Q: Sure, but why?**
+**Sure, but why?**
 - Because **TestD** lets you define tabular data once, then reuse & compose it across systems. (Spark is just one target),
 plug in your own algebras and extension methods.
 
-**Q: Why a spreadsheet format?**
+**Why a spreadsheet format?**
 - Because it’s visual, writable by humans, easy to diff and battle-tested for centuries (even if derided in some CS circles).
 
-**Q: Why not use Scala literals, DataFrame code, or generators?**
+**Why not use Scala literals, DataFrame code, or generators?**
 - Because they’re noisy, and tied to structure. **TestD** is readable, and delays schema application until you need it. The inspiration
 here is the Clojure/Lisp-y code-as-data way.
 
-**Q: Who is this for?**
+**Who is this for?**
 - Programmers tired of rotting `.csv`, `.json`, or `.txt` fixtures in their `resources/` or having to unbreak their test objects
 everytime their data models evolve.
 
@@ -43,17 +53,17 @@ everytime their data models evolve.
 - [Get Started](#get-started)
 - [Basic API](#basic-api)
   - [TestD](#testd)
-  - [toMap](#toMap)
+  - [`.toMap`](#toMap)
 - [Editing](#editing)
 - [Composition](#composition)
 - [Spark](#spark)
   - [Conversions](#conversions)
-    - [toDf](#toDf)
-    - [fromDf](#fromdf)
+    - [`.toDf`](#toDf)
+    - [`.fromDf`](#fromdf)
   - [Casting](#casting)
-    - [castToSchema](#casttochema)
-    - [conformToSchema](#conformtoschema)
-    - [filterToSchema](#filtertochema)
+    - [`.castToSchema`](#casttochema)
+    - [`.conformToSchema`](#conformtoschema)
+    - [`.filterToSchema`](#filtertochema)
     - [Nested data](#nested-data)
 - [More examples](#more-examples)
 
@@ -167,7 +177,7 @@ val cleaned = data.drop("country", "city")
 ## Composition
 You can also compose **TestD**'s
 
-You can also compose TestD's. These operations work on a row-by-row basis, comparing all column values to determine matches.
+These composition functions work on a row-by-row basis, comparing all column values to determine matches.
 
 ### `.union`
 Combine **TestD** instances:
@@ -213,7 +223,9 @@ subset.contains(superset) /* false */
 **TestD** comes packaged with spark helpers.
 
 ### Conversions
-This lets your slurp any Spark DataFrame into a beautiful test fixture, and vice-versa convert any **TestD** into a DataFrame.
+This lets your slurp any Spark DataFrame into a **TestD** ...
+
+and vice-versa convert any **TestD** into a DataFrame.
 
 #### `.toDf`
 Convert **TestD** to Spark DataFrame:
