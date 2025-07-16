@@ -20,7 +20,7 @@ Part of [d4](https://github.com/mattlianje/d4)
 ## FAQ
 
 **Q: Why TestD?**
-- Because test data is critical - and painful to maintain in brittle case classes, or junk files outside your code.
+Because test data is critical - and painful to maintain in brittle case classes, or junk files outside your code.
 
 **Q: Sure, but why?**
 - Because **TestD** lets you define tabular data once, then reuse & compose it across systems. (Spark is just one target),
