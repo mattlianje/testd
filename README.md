@@ -1,3 +1,4 @@
+<!--
 <div align="right">
   <a href="https://yourcompany.com">
     <img src="pix/sponsor-logo.png" width="100">
@@ -5,6 +6,7 @@
   <br>
   <sub><i>Sponsored by YourCompany</i></sub>
 </div>
+-->
 
 <p align="center">
   <img src="pix/testd.png" width="700">
