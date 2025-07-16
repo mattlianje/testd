@@ -20,6 +20,7 @@ Part of [d4](https://github.com/mattlianje/d4)
 ## FAQ
 
 **Q: Why TestD?**
+
 Because test data is critical - and painful to maintain in brittle case classes, or junk files outside your code.
 
 **Q: Sure, but why?**
