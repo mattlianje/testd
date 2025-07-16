@@ -43,7 +43,7 @@ everytime their data models evolve.
 - [Get Started](#get-started)
 - [Basic API](#basic-api)
   - [TestD](#testd)
-  - [.toMap`](#toMap)
+  - [`.toMap`](#toMap)
 - [Editing](#editing)
 - [Composition](#composition)
 - [Spark](#spark)
@@ -53,7 +53,7 @@ everytime their data models evolve.
   - [Casting](#casting)
     - [`.castToSchema`](#casttochema)
     - [`.conformToSchema`](#conformtoschema)
-    - [.filterToSchema`](#filtertochema)
+    - [`.filterToSchema`](#filtertochema)
     - [Nested data](#nested-data)
 - [More examples](#more-examples)
 
