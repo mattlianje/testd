@@ -358,7 +358,6 @@ case class TestD[T](data: Seq[T]) {
       }
     }.toSet
 
-    // Convert this TestD to map
     val thisAsMap = if (this.data.head.isInstanceOf[Map[_, _]]) {
       this.data.map(_.asInstanceOf[Map[String, Any]])
     } else {
@@ -388,13 +387,9 @@ object TestD {
   import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
   import scala.collection.mutable
 
-  // def apply[T](data: Seq[T]): TestD[T] = new TestD(data)
   def apply[T](first: T, rest: T*): TestD[T] = new TestD(first +: rest)
-
-  // Keep the Seq constructor for when you have a collection
   def apply[T](data: Seq[T]): TestD[T] = new TestD(data)
 
-  // Convenience method for maps
   def maps(
       first: Map[String, Any],
       rest: Map[String, Any]*
@@ -407,12 +402,32 @@ object TestD {
   ): String =
     if (caseSensitive) name else name.toUpperCase
 
-  private def castColumn(colName: String, dataType: DataType): Column =
+  private def castColumn(colName: String, dataType: DataType): Column = {
     dataType match {
-      case _: ArrayType | _: StructType | _: MapType =>
-        from_json(col(colName), dataType)
-      case _ => col(colName).cast(dataType)
+      case arrayType: ArrayType =>
+        arrayType.elementType match {
+          case _: StructType | _: ArrayType | _: MapType =>
+            from_json(col(colName), arrayType)
+          case _ =>
+            when(col(colName).isNull, lit(null).cast(arrayType))
+              .otherwise(
+                when(
+                  col(colName).startsWith("["),
+                  from_json(col(colName), arrayType)
+                )
+                  .otherwise(split(col(colName), ",").cast(arrayType))
+              )
+        }
+      case structType: StructType =>
+        when(col(colName).isNull, lit(null).cast(structType))
+          .otherwise(from_json(col(colName), structType))
+      case mapType: MapType =>
+        when(col(colName).isNull, lit(null).cast(mapType))
+          .otherwise(from_json(col(colName), mapType))
+      case _ =>
+        col(colName).cast(dataType)
     }
+  }
 
   def castToSchema(
       df: DataFrame,
@@ -422,6 +437,7 @@ object TestD {
     val schemaMap = schema.fields
       .map(f => normalizeColumnName(f.name, caseSensitive) -> f.dataType)
       .toMap
+
     val castColumns = df.columns.map { colName =>
       schemaMap
         .get(normalizeColumnName(colName, caseSensitive))
@@ -429,6 +445,7 @@ object TestD {
         .getOrElse(col(colName))
         .as(colName)
     }
+
     df.select(castColumns: _*)
   }
 
@@ -439,17 +456,27 @@ object TestD {
   ): DataFrame = {
     val dfColMap =
       df.columns.map(c => normalizeColumnName(c, caseSensitive) -> c).toMap
+
     val conformedColumns = schema.fields.map { field =>
       val normalizedName = normalizeColumnName(field.name, caseSensitive)
       dfColMap
         .get(normalizedName)
         .map(origCol => castColumn(origCol, field.dataType))
-        .getOrElse(lit(null).cast(field.dataType))
+        .getOrElse(
+          field.dataType match {
+            case _: ArrayType  => lit(null).cast(field.dataType)
+            case _: StructType => lit(null).cast(field.dataType)
+            case _: MapType    => lit(null).cast(field.dataType)
+            case _             => lit(null).cast(field.dataType)
+          }
+        )
         .as(field.name)
     }
+
     df.select(conformedColumns: _*)
   }
 
+  /** Enhanced schema filtering with nested type awareness */
   def filterToSchema(
       df: DataFrame,
       schema: StructType,
@@ -457,12 +484,15 @@ object TestD {
   ): DataFrame = {
     val schemaColumns =
       schema.fields.map(f => normalizeColumnName(f.name, caseSensitive)).toSet
+
     val filteredColumns = df.columns
       .filter(c =>
         schemaColumns.contains(normalizeColumnName(c, caseSensitive))
       )
       .map(col)
-    castToSchema(df.select(filteredColumns: _*), schema, caseSensitive)
+
+    val filteredDf = df.select(filteredColumns: _*)
+    castToSchema(filteredDf, schema, caseSensitive)
   }
 
   /** Convert nested Spark types to JSON strings for proper round-trip handling

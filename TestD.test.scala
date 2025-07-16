@@ -225,6 +225,59 @@ class TestDTest extends munit.FunSuite {
     assert(testd.toString.contains("\"subject\":\"Math\""))
   }
 
+  test("deep nesting schema conforming") {
+    val deepSchema = StructType(
+      Seq(
+        StructField("id", IntegerType),
+        StructField(
+          "address",
+          StructType(
+            Seq(
+              StructField(
+                "location",
+                StructType(
+                  Seq(
+                    StructField("city", StringType),
+                    StructField("zipcode", StringType)
+                  )
+                )
+              ),
+              StructField("country", StringType)
+            )
+          )
+        ),
+        StructField(
+          "grades",
+          ArrayType(
+            StructType(
+              Seq(
+                StructField("score", IntegerType),
+                StructField("subject", StringType)
+              )
+            )
+          )
+        )
+      )
+    )
+
+    val data = Seq((1, Row(Row("NY", "10001"), "USA"), Seq(Row(95, "Math"))))
+    val originalDf = spark.createDataFrame(
+      spark.sparkContext.parallelize(data.map(Row.fromTuple)),
+      deepSchema
+    )
+
+    // Round-trip: typed DF -> TestD -> string DF -> conform back to typed DF
+    val testd = TestD.fromDf(originalDf)
+    val stringDf = testd.toDf(spark)
+    val conformedDf = TestD.conformToSchema(stringDf, deepSchema)
+
+    assertEquals(conformedDf.schema, deepSchema)
+    assertEquals(originalDf.count(), conformedDf.count())
+
+    val result = conformedDf.collect()
+    assertEquals(result.length, 1)
+  }
+
   test("asMaps functionality") {
     val tupleTestd = TestD(("name", "age"), ("Alice", 25), ("Bob", 30))
     val expected = Seq(
