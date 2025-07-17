@@ -46,7 +46,8 @@ val data = TestD(
 )
 println(data)
 ```
-```
+This autoformats as below ✨
+```scala
 TestD(
   ("ID", "SCORE", "GRADE"),
   (1   , 95     , "A"    ),
