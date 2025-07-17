@@ -26,6 +26,34 @@ Part of [d4](https://github.com/mattlianje/d4)
 - Easily extensible with your own algebras
 - Batteries included Spark support (see Spark Integration)
 
+## Get started
+> [!WARNING]  
+> TestD API is still undergoing tweaks. Breaking changes might happen
+
+Load the latest `master` in your spark-shell:
+```bash
+spark-shell -i <(curl -sL https://raw.githubusercontent.com/mattlianje/testd/master/TestD.scala)
+```
+
+All you need is `import testd._` and start creating beautiful data:
+```scala
+import testd._
+
+val data = TestD(
+  ("id", "score", "grade"),
+  (1, 95, "A"),
+  (2, 87, "B")
+)
+println(data)
+```
+This autoformats as below ✨
+```scala
+TestD(
+  ("ID", "SCORE", "GRADE"),
+  (1   , 95     , "A"    ),
+  (2   , 87     , "B"    )
+)
+```
 
 ## FAQ
 
@@ -67,32 +95,6 @@ everytime their data models evolve.
     - [Nested data](#nested-data)
 - [More examples](#more-examples)
 
-
-## Get started
-> [!WARNING]  
-> TestD API is still undergoing tweaks. Breaking changes might happen
-
-Load the latest `master` in your spark-shell:
-```bash
-spark-shell -i <(curl -sL https://raw.githubusercontent.com/mattlianje/testd/master/TestD.scala)
-```
-
-All you need is `import testd._` and start creating beautiful data:
-```scala
-import testd._
-
-scala> val people = TestD(
-     |   ("name", "age", "city"),
-     |   ("Alice", 25, "New York"),
-     |   ("Bob", 30, "London")
-     | )
-people: testd.TestD[(String, Any, String)] =
-TestD(
-  ("NAME" , "AGE", "CITY"    ),
-  ("Alice", 25   , "New York"),
-  ("Bob"  , 30   , "London"  )
-)
-```
 
 ## Basic API
 A TestD is just a case class that wraps some a `Seq` of `Map[String, Any]`
