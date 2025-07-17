@@ -9,7 +9,7 @@
 -->
 
 <p align="center">
-  <img src="pix/testd.png" width="700">
+  <img src="pix/testd-demo.png" width="700">
 </p>
 
 # <img src="pix/testd-logo.png" width="60">   testd
