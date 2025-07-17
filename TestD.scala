@@ -11,6 +11,13 @@ package testd
 
 /** Tabular test data with precise formatting and DataFrame interop. Supports
   * tuples, sequences, and maps with automatic column alignment.
+  *
+  * @example
+  *   {{{ val users = TestD( Map("name" -> "Alice", "role" -> "Engineer"),
+  *   Map("name" -> "Bob", "role" -> "Designer") )
+  *
+  * val withSalary = users.withColumn("salary", 85000) val df =
+  * withSalary.toDf(spark) }}}
   */
 case class TestD[T](data: Seq[T]) {
   import org.apache.spark.sql.{SparkSession, DataFrame, Row}
@@ -69,6 +76,15 @@ case class TestD[T](data: Seq[T]) {
     data.tail.map(toSeq)
   }
 
+  /** Convert TestD to consistent Map representation regardless of input format.
+    *
+    * @return
+    *   Sequence of maps where each map represents a row with column names as
+    *   keys
+    * @example
+    *   {{{ val tupleData = TestD(("name", "age"), ("Alice", 25))
+    *   tupleData.asMaps // Seq(Map("NAME" -> "Alice", "AGE" -> 25)) }}}
+    */
   def asMaps: Seq[Map[String, Any]] = {
     if (data.head.isInstanceOf[Map[_, _]]) {
       data.map(_.asInstanceOf[Map[String, Any]])
@@ -95,7 +111,6 @@ case class TestD[T](data: Seq[T]) {
             .sortBy(_._1)
             .map { case (k, v) =>
               v match {
-                // JSON objects/arrays get triple-quoted
                 case s: String if s.trim.matches("""^\s*\{[\s\S]*\}\s*$""") || s.trim.matches("""^\s*\[[\s\S]*\]\s*$""") =>
                   s""""$k" -> \"\"\"$s\"\"\""""
                 case s: String => s""""$k" -> "$s""""
@@ -110,6 +125,19 @@ case class TestD[T](data: Seq[T]) {
     s"TestD(\n$formattedMaps\n)"
   }
 
+  /** Convert TestD to Spark DataFrame with all columns as StringType.
+    *
+    * @param spark
+    *   SparkSession for DataFrame creation
+    * @return
+    *   DataFrame with string columns matching TestD structure
+    * @note
+    *   All values are converted to strings; use schema operations for proper
+    *   typing
+    * @example
+    *   {{{ val df = testd.toDf(spark) val typed = TestD.castToSchema(df,
+    *   mySchema) }}}
+    */
   def toDf(spark: SparkSession): DataFrame = {
     val schema = headers.zipWithIndex.map { case (header, idx) =>
       StructField(header.toString, StringType, nullable = true)
@@ -200,6 +228,18 @@ case class TestD[T](data: Seq[T]) {
   def withColumn(name: String): TestD[Map[String, Any]] =
     withColumn(name, null.asInstanceOf[String])
 
+  /** Add a new column with the specified value to all rows.
+    *
+    * @param name
+    *   Column name to add
+    * @param value
+    *   Value to set for all rows in the new column
+    * @return
+    *   New TestD with the added column, converted to Map representation
+    * @example
+    *   {{{ val users = TestD(("name", "age"), ("Alice", 25)) val withSalary =
+    *   users.withColumn("salary", 85000) }}}
+    */
   def withColumn(name: String, value: Any): TestD[Map[String, Any]] = {
     new TestD[Map[String, Any]](
       if (data.head.isInstanceOf[Map[_, _]]) {
@@ -212,6 +252,17 @@ case class TestD[T](data: Seq[T]) {
     )
   }
 
+  /** Select specific columns from the TestD.
+    *
+    * @param colNames
+    *   Column names to select (case-insensitive)
+    * @return
+    *   New TestD containing only the specified columns
+    * @throws IllegalArgumentException
+    *   if any column names don't exist
+    * @example
+    *   {{{val subset = data.select("name", "age")}}}
+    */
   def select(colNames: String*): TestD[Map[String, Any]] = {
     val upperColNames = colNames.map(_.toUpperCase)
     val nonExistentColumns = upperColNames.filterNot(col =>
@@ -243,6 +294,15 @@ case class TestD[T](data: Seq[T]) {
     )
   }
 
+  /** Remove specified columns from the TestD.
+    *
+    * @param colNames
+    *   Column names to drop (case-insensitive)
+    * @return
+    *   New TestD without the specified columns
+    * @example
+    *   {{{val cleaned = data.drop("temp_col", "debug_info")}}}
+    */
   def drop(colNames: String*): TestD[Map[String, Any]] = {
     val upperColNames = colNames.map(_.toUpperCase)
     select(
@@ -255,6 +315,15 @@ case class TestD[T](data: Seq[T]) {
   /** Union two TestD instances, combining all rows from both. Columns are
     * aligned by name (case-insensitive), missing columns filled with null.
     * Result always uses Map representation for consistent column handling.
+    *
+    * @param other
+    *   TestD to union with this one
+    * @return
+    *   New TestD containing all rows from both TestDs
+    * @example
+    *   {{{ val team1 = TestD(("name", "role"), ("Alice", "Dev")) val team2 =
+    *   TestD(("name", "role"), ("Bob", "PM")) val combined = team1.union(team2)
+    *   }}}
     */
   def union(other: TestD[_]): TestD[Map[String, Any]] = {
     // Get all unique column names from both TestDs
@@ -294,6 +363,17 @@ case class TestD[T](data: Seq[T]) {
   /** Intersect two TestD instances, keeping only rows that exist in both. Rows
     * are compared by all column values (case-insensitive for column names).
     * Only columns present in BOTH TestDs are included in the result.
+    *
+    * @param other
+    *   TestD to intersect with this one
+    * @return
+    *   New TestD containing only rows present in both TestDs
+    * @throws IllegalArgumentException
+    *   if no common columns exist
+    * @example
+    *   {{{ val current = TestD(("id", "name"), (1, "Alice"), (2, "Bob")) val
+    *   active = TestD(("id", "name"), (1, "Alice")) val overlap =
+    *   current.intersect(active) // Contains only Alice }}}
     */
   def intersect(other: TestD[_]): TestD[Map[String, Any]] = {
     // Find common columns (case-insensitive)
@@ -332,6 +412,15 @@ case class TestD[T](data: Seq[T]) {
 
   /** Check if this TestD contains all rows from another TestD. Useful for
     * subset testing.
+    *
+    * @param other
+    *   TestD to check if contained within this one
+    * @return
+    *   true if all rows in other exist in this TestD
+    * @example
+    *   {{{ val full = TestD(("name", "age"), ("Alice", 25), ("Bob", 30)) val
+    *   subset = TestD(("name", "age"), ("Alice", 25)) full.contains(subset) //
+    *   true }}}
     */
   def contains(other: TestD[_]): Boolean = {
     import scala.util.{Try, Success, Failure}
@@ -349,6 +438,16 @@ case class TestD[T](data: Seq[T]) {
 
   /** Remove rows that exist in another TestD (set difference). Only considers
     * columns present in BOTH TestDs for comparison.
+    *
+    * @param other
+    *   TestD containing rows to remove from this one
+    * @return
+    *   New TestD with rows from other removed
+    * @example
+    *   {{{ val all = TestD(("name", "status"), ("Alice", "active"), ("Bob",
+    *   "inactive")) val inactive = TestD(("name", "status"), ("Bob",
+    *   "inactive")) val activeOnly = all.except(inactive) // Contains only
+    *   Alice }}}
     */
   def except(other: TestD[_]): TestD[Map[String, Any]] = {
     val intersection = this.intersect(other)
@@ -387,9 +486,22 @@ object TestD {
   import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
   import scala.collection.mutable
 
+  /** Create TestD from varargs of any type.
+    *
+    * @example
+    *   {{{val data = TestD( ("name", "age"), ("Alice", 25), ("Bob", 30) )}}}
+    */
   def apply[T](first: T, rest: T*): TestD[T] = new TestD(first +: rest)
+
+  /** Create TestD from a sequence. */
   def apply[T](data: Seq[T]): TestD[T] = new TestD(data)
 
+  /** Convenience constructor for Map data.
+    *
+    * @example
+    *   {{{ val users = TestD.maps( Map("name" -> "Alice", "role" ->
+    *   "Engineer"), Map("name" -> "Bob", "role" -> "Designer") ) }}}
+    */
   def maps(
       first: Map[String, Any],
       rest: Map[String, Any]*
@@ -429,6 +541,22 @@ object TestD {
     }
   }
 
+  /** Cast DataFrame columns to match target schema types.
+    *
+    * @param df
+    *   Source DataFrame (typically from TestD.toDf)
+    * @param schema
+    *   Target schema with desired types
+    * @param caseSensitive
+    *   Whether column name matching is case-sensitive
+    * @return
+    *   DataFrame with columns cast to schema types
+    * @note
+    *   Preserves all original columns, only casting those that match schema
+    * @example
+    *   {{{ val stringDf = testd.toDf(spark) val typed =
+    *   TestD.castToSchema(stringDf, mySchema) }}}
+    */
   def castToSchema(
       df: DataFrame,
       schema: StructType,
@@ -449,6 +577,22 @@ object TestD {
     df.select(castColumns: _*)
   }
 
+  /** Ensure DataFrame conforms exactly to target schema structure. Adds missing
+    * columns as nulls and casts existing columns to proper types.
+    *
+    * @param df
+    *   Source DataFrame
+    * @param schema
+    *   Target schema defining the exact structure needed
+    * @param caseSensitive
+    *   Whether column name matching is case-sensitive
+    * @return
+    *   DataFrame with exactly the columns and types specified in schema
+    * @example
+    *   {{{ val partial = spark.createDataFrame(Seq(("Alice",))).toDF("name")
+    *   val complete = TestD.conformToSchema(partial, fullSchema) // Now has all
+    *   schema columns with proper nulls }}}
+    */
   def conformToSchema(
       df: DataFrame,
       schema: StructType,
@@ -476,7 +620,20 @@ object TestD {
     df.select(conformedColumns: _*)
   }
 
-  /** Enhanced schema filtering with nested type awareness */
+  /** Filter DataFrame to only include columns present in target schema.
+    *
+    * @param df
+    *   Source DataFrame
+    * @param schema
+    *   Target schema defining which columns to keep
+    * @param caseSensitive
+    *   Whether column name matching is case-sensitive
+    * @return
+    *   DataFrame containing only schema columns, cast to proper types
+    * @example
+    *   {{{ val filtered = TestD.filterToSchema(extraColumnsDf, cleanSchema) //
+    *   Removes unwanted columns and casts to proper types }}}
+    */
   def filterToSchema(
       df: DataFrame,
       schema: StructType,
@@ -495,8 +652,20 @@ object TestD {
     castToSchema(filteredDf, schema, caseSensitive)
   }
 
-  /** Convert nested Spark types to JSON strings for proper round-trip handling
-    * (round-trip) = Df -> TestD -> Df ... without any loss for a given schema
+  /** Create TestD from Spark DataFrame, preserving complex types as JSON
+    * strings. This enables round-trip compatibility: DataFrame → TestD →
+    * DataFrame.
+    *
+    * @param df
+    *   Source DataFrame with any schema
+    * @return
+    *   TestD where complex nested types are serialized as JSON strings
+    * @note
+    *   Nested structs, arrays, and maps become JSON; use with conformToSchema
+    *   for round-trips
+    * @example
+    *   {{{ val testd = TestD.fromDf(complexDf) val backToDf = testd.toDf(spark)
+    *   val restored = TestD.conformToSchema(backToDf, complexDf.schema) }}}
     */
   def fromDf(df: DataFrame): TestD[Map[String, Any]] = {
     /* Recursively convert Spark values to JSON format */
