@@ -20,7 +20,7 @@ Part of [d4](https://github.com/mattlianje/d4)
 
 ## Features
 - Spreadsheet-like data-as-code 🍰
-- Reusable, composable test fixtures
+- Re-use, compose and modify your test data like mini dataframes
 - Works beautifully in REPL
 - Drop **TestD.scala** in like a header file
 - Easily extensible with your own algebras
