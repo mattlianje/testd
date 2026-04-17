@@ -1,12 +1,6 @@
-<!--
 <div align="right">
-  <a href="https://yourcompany.com">
-    <img src="pix/sponsor-logo.png" width="100">
-  </a>
-  <br>
-  <sub><i>Sponsored by YourCompany</i></sub>
+  <sub><em>Part of <a href="https://github.com/mattlianje/d4"><img src="https://raw.githubusercontent.com/mattlianje/d4/master/pix/d4.png" width="23"></a> <a href="https://github.com/mattlianje/d4">d4</a></em></sub>
 </div>
--->
 
 <p align="center">
   <img src="pix/testd-demo.png" width="700">
